@@ -1,0 +1,123 @@
+<root>
+<document schema='101' license='-1,88263627,K38DMR' title='' description='' target='PIC.18F.18F14K50' >
+	<config data='!0,ff!8,3f!10,f9!18,fe!20,ff!28,7f!30,ba!38,ff!40,ff!48,ff!50,ff!58,ff!60,ff!68,ff%3,3%5,1%8,f%c,1%d,1%e,0%f,0%10,1%11,0%13,3%18,0%19,f%2b,1%2f,0%30,0%32,0%33,1%36,0%37,1%40,1%41,1%4e,1%4f,1%50,1%51,1%5d,1%5e,1%5f,1%60,1%61,1%6e,1' clkspd='12000000' simspd='1' usewdt='0' constif='0' />
+	<plugins >
+		<dll_dbg_icd enabled='0' >
+			<data name='debug' value='1' />
+			<data name='userpins' value='0' />
+			<data name='speed' value='0' />
+			<data name='usev9' value='0' />
+			<data name='breaks' value='8' />
+			<data name='stacks' value='8' />
+			<data name='clkport' value='1' />
+			<data name='clkbit' value='6' />
+			<data name='dataport' value='1' />
+			<data name='databit' value='7' />
+			<data name='ghostype' value='0' />
+			<data name='monitor' value='1' />
+			<data name='ictloop' value='0' />
+			<data name='ictrate' value='20000' />
+			<data name='ictmask' value='0' />
+			<data name='anlpres' value='255' />
+			<data name='digmask1' value='-1' />
+			<data name='digmask2' value='-1' />
+		</dll_dbg_icd>
+		<dll_models enabled='1' />
+		<dll_upgrader enabled='1' />
+		<dll_webhelp enabled='1' />
+	</plugins>
+	<supplement use='0' head='' body='' />
+	<debug />
+	<components >
+		<settings autoimg='1' center='1' unitscale='0' fixedscale='0' fixedx='1' fixedy='1' fixedz='1' headcode='0' />
+		<definition guid='33317176-b74c-4652-87fe-98eae89d3c9b' vstate='40' vmin='0' vmaj='1' srcleaf='' visiblename='' description='' category='' catenable='1' author='' manuname='' manucode='' sysinfo='0' keywords='' dynamic='0' iconpath='' />
+		<component class_type='root' codename='panel' x='0' y='0' z='0' xsz='1' ysz='1' zsz='1' xang='0' yang='0' zang='0' xquat='0' yquat='0' zquat='0' wquat='1' visible='1' interactive='1' solid='1' layer='0' poslock='0' >
+			<resources />
+			<properties />
+			<values />
+			<events />
+			<apis />
+			<variables >
+				<variable public='0' >
+					<def class_type='variable' name='false' type='b1' description='' isconst='1' isinit='1' usrinit='0' setinit='0' />
+				</variable>
+				<variable public='0' >
+					<def class_type='variable' name='Operation' type='u8' description='' isconst='0' isinit='1' usrinit='0' setinit='0' />
+				</variable>
+				<variable public='0' >
+					<def class_type='variable' name='OutString' type='T8' description='' isconst='0' isinit='1' usrinit='&quot;Hey&quot;' setinit='&quot;Hey&quot;' >
+						<array size='20' />
+					</def>
+				</variable>
+				<variable public='0' >
+					<def class_type='variable' name='true' type='b1' description='' isconst='1' isinit='1' usrinit='1' setinit='1' />
+				</variable>
+			</variables>
+			<macros >
+				<macro >
+					<flowline name='Main' description='' >
+						<return name='Return' type='v0' description='' isconst='0' isinit='0' usrinit='' setinit='' />
+						<command class_type='call' title='Call Component Macro' component='USB_Serial1' macro='Initialise' />
+						<command class_type='call' title='Call Component Macro' component='USB_Serial1' macro='ReadByte' >
+							<return exp='Operation' />
+							<argument exp='10' />
+						</command>
+						<command class_type='switch' title='Switch' textarea='36,25,36,25' exp='Operation' >
+							<case >
+								<flowline />
+							</case>
+							<case exp='1' >
+								<flowline >
+									<command class_type='call' title='Call Component Macro' component='USB_Serial1' macro='SendString' >
+										<argument exp='OutString' />
+									</command>
+								</flowline>
+							</case>
+						</command>
+					</flowline>
+				</macro>
+			</macros>
+			<component class_type='ref' guid='3e28ac22-2855-410a-9660-0b0a4731e545' vmin='6' vmaj='1' codename='USB_Serial1' x='0' y='0' z='0.755' xsz='60' ysz='26' zsz='1.51' xang='0' yang='0' zang='0' xquat='0' yquat='0' zquat='0' wquat='1' visible='1' interactive='1' solid='1' layer='1' poslock='0' >
+				<resources />
+				<properties />
+				<values >
+					<value target='vendor_ID' data='4799' />
+					<value target='product_ID' data='61456' />
+					<value target='dev_name' data='Flowcode USB Serial' />
+					<value target='dev_manufacturer' data='Matrix Multimedia Ltd.' />
+					<value target='major_version' data='1' />
+					<value target='minor_version' data='0' />
+					<value target='RETURN' data='000' />
+					<value target='enumeration_tout' data='0' />
+					<value target='timeout' data='10' />
+					<value target='usb_type' data='3' />
+					<value target='TXBUFSZ' data='64' />
+					<value target='RXBUFSZ' data='64' />
+					<value target='driver_directory' data='$(srcdir)' />
+					<value target='driver_filename' data='Flowcode_USB_Serial_Driver' />
+					<value target='gen_driver' data='' />
+					<value target='COM_port' data='001' />
+					<value target='label' data='USB Serial' />
+				</values>
+				<events />
+				<apis />
+				<variables />
+				<macros />
+			</component>
+		</component>
+	</components>
+	<keymap />
+	<panel2d shadows='0' lighting='2' brightness='0' perspective='0' >
+		<background rgb='9737364' img='' style='0' />
+		<camera xe='0' ye='0' ze='300' xt='0' yt='0' zt='0' xquat='0' yquat='0' zquat='0' wquat='1' />
+	</panel2d>
+	<panel3d shadows='0' lighting='2' brightness='0' perspective='0' >
+		<background rgb='8409120' img='' style='0' />
+		<table rgb='7360576' img='' style='0' size='25' />
+		<camera xe='0' ye='0' ze='300' xt='0' yt='0' zt='0' xquat='0' yquat='0' zquat='0' wquat='1' />
+	</panel3d>
+	<layout >
+		<view type='0' name='Main' mode='0' placement='LAAAAAAAAAABAAAA---------------------wAAAAAUAAAARgMAAOYCAAA' zoom='75' scrollx='0' scrolly='0' flags='0' />
+	</layout>
+</document>
+</root>
