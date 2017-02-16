@@ -2633,6 +2633,11 @@ label113
 	MOVWF gbl_FCV_READINPUT, 1
 	MOVF CompTempVarRet2327+D'1', W, 1
 	MOVWF gbl_FCV_READINPUT+D'1', 1
+	MOVLW 0x01
+	IORWF gbl_FCV_READINPUT, F, 1
+	MOVF gbl_FCV_READINPUT+D'1', W, 1
+	IORLW 0x10
+	MOVWF gbl_FCV_READINPUT+D'1', 1
 	MOVF gbl_FCV_READINPUT, W, 1
 	MOVWF gbl_FCV_OUTSTRING, 1
 	MOVF gbl_FCV_READINPUT+D'1', W, 1
@@ -2655,7 +2660,7 @@ label114
 	BRA	label111
 ; } main function end
 
-	ORG 0x00000FE0
+	ORG 0x00000FEA
 _startup
 	MOVLW 0xD5
 	MOVLB 0x00
@@ -2940,7 +2945,7 @@ _startup
 	MOVWF gbl_string_00+D'3', 1
 	CLRF gbl_CDC_USB_status, 1
 	GOTO	main
-	ORG 0x00001218
+	ORG 0x00001222
 interrupt
 ; { interrupt ; function begin
 	MOVFF FSR0H,  Int1Context
