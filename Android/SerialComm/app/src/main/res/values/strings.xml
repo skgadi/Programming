@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">SerialComm</string>
+    <string name="list_devices">List all the devices</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="serial_port">Serial Port</string>
+</resources>
