@@ -5,14 +5,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -23,21 +27,23 @@ import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    public TextView mTextMessage;
+    private TextView mTextMessage;
     protected UsbManager manager;
     ProbeTable customTable;
     UsbSerialProber prober;
     List<UsbSerialDriver> drivers;
     UsbSerialDriver driver;
     UsbDeviceConnection connection;
-    public UsbSerialPort port;
-    public byte SendBuffer[];
+    private UsbSerialPort port;
+
+    private ProgressBar ProgramProgressBar;
 
     ToggleButton ConnectButton;
     Button ProgramButton;
@@ -81,9 +87,11 @@ public class MainActivity extends AppCompatActivity {
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
         //Added by Suresh Gadi
+        //Pulling variables from xml
         ProgramButton = (Button) findViewById(R.id.programButton);
         ConnectButton = (ToggleButton) findViewById(R.id.toggleConnectButton);
-        SendBuffer = new byte[6];
+        ProgramProgressBar = (ProgressBar) findViewById(R.id.ProgramProgressBar);
+
 
         customTable = new ProbeTable();
         customTable.addProduct(0x4D8, 0x000A, CdcAcmSerialDriver.class);
@@ -153,43 +161,149 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void PrepareSendBufferToWrite(int address, int data) {
-        SendBuffer[0] = 0x02;
-        SendBuffer[1] = (byte)(address>>16 & 0xff);
-        SendBuffer[2] = (byte)(address>>8 & 0xff);
-        SendBuffer[3] = (byte)(address & 0xff);
-        SendBuffer[4] = (byte)(data>>8 & 0xff);
-        SendBuffer[5] = (byte)(data & 0xff);
-        ByteBuffer wrapped =ByteBuffer.wrap(SendBuffer);
-        mTextMessage.append("\n"+Integer.toHexString(wrapped.getInt()));
-        return;
-    }
 
     public void SendAndVerify (View v) {
-        int RecBuffLength=0;
-        byte RecBuffer[] = new byte[4];
-        int MAddress = 0x310000;
-        byte Data = 10;
-        PrepareSendBufferToWrite(MAddress, Data);
-        for (int i=0; i<10; i++) {
-            PrepareSendBufferToWrite(MAddress, Data);
+        new ProgramDeviceTask().execute(port);
+        return;
+    }
+    private void setProgressPercent(Integer Percent) {
+        ProgramProgressBar.setProgress(Percent);
+    }
+    private class ProgramDeviceTask extends AsyncTask<UsbSerialPort, Integer, Integer> {
+        private boolean isSuccessful = true;
+        private int lastErrorLocation=0;
+        private int noOfErrors = 0;
+        UsbSerialPort port;
+        private byte SendBuffer[] = new byte[6];
+
+        private void PrepareSendBufferToWrite(int address, int data) {
+            SendBuffer[0] = 0x35;
+            SendBuffer[1] = (byte)(address>>16 & 0xff);
+            SendBuffer[2] = (byte)(address>>8 & 0xff);
+            SendBuffer[3] = (byte)(address & 0xff);
+            SendBuffer[4] = (byte)(data>>8 & 0xff);
+            SendBuffer[5] = (byte)(data & 0xff);
+            /*SendBuffer[6] = (byte)(data & 0x0D);
+            SendBuffer[7] = (byte)(data & 0x0A);*/
+            //  ByteBuffer wrapped =ByteBuffer.wrap(SendBuffer);
+            //mTextMessage.append("\n"+Integer.toHexString(wrapped.getInt()));
+            return;
+        }
+
+        private void PrepareStartCommand(){
+            SendBuffer[0] = 0x33;
+            return;
+        }
+
+        private void PrepareEndCommand(){
+            SendBuffer[0] = 0x34;
+            return;
+        }
+
+        protected Integer doInBackground(UsbSerialPort... ports) {
+            port = ports[0];
+            int RecBuffLength=0;
+            byte RecBuffer[] = new byte[4];
+            int MAddress = 0x310000;
+            byte Data = 10;
+            PrepareStartCommand();
             try {
-                //port.purgeHwBuffers(true, true);
+                port.purgeHwBuffers(true, true);
                 port.write(SendBuffer, 10);
             } catch (IOException e) {
                 e.printStackTrace();
-                Toast.makeText(MainActivity.this, "Writing error",Toast.LENGTH_SHORT).show();
+               // Toast.makeText(MainActivity.this, "Writing error",Toast.LENGTH_SHORT).show();
             }
+            for (int i=0; i<100; i++) {
+                PrepareSendBufferToWrite(MAddress+i, Data);
+                try {
+                    port.purgeHwBuffers(true, true);
+                    port.write(SendBuffer, 10);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    //Toast.makeText(MainActivity.this, "Writing error",Toast.LENGTH_SHORT).show();
+                }
+                try {
+                    RecBuffer[0] = 3;
+                    RecBuffLength = port.read(RecBuffer, 10);
+                    if (RecBuffer[0]==0) {
+                        isSuccessful = false;
+                        lastErrorLocation = i;
+                        noOfErrors++;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    //Toast.makeText(MainActivity.this, "Receive error",Toast.LENGTH_SHORT).show();
+                }
+                //mTextMessage.append("\nSent "+Data+ " to memory "+MAddress+" and Recevied "+RecBuffLength+" byes as "+ RecBuffer[0]+"  "+RecBuffer[1]+"  "+RecBuffer[2]+"  "+RecBuffer[3]);
+                MAddress++;
+                Data++;
+                publishProgress(((i+1)*100)/1024);
+            }
+            PrepareEndCommand();
             try {
-                RecBuffLength = port.read(RecBuffer, 10);
+                port.purgeHwBuffers(true, true);
+                port.write(SendBuffer, 10);
             } catch (IOException e) {
                 e.printStackTrace();
-                Toast.makeText(MainActivity.this, "Receive error",Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MainActivity.this, "Writing error",Toast.LENGTH_SHORT).show();
             }
-            mTextMessage.append("\nSent "+Data+ " to memory "+MAddress+" and Recevied "+RecBuffLength+" byes as "+ RecBuffer[0]+"  "+RecBuffer[1]+"  "+RecBuffer[2]+"  "+RecBuffer[3]);
-            MAddress++;
-            Data++;
+            return 1;
         }
-        return;
+
+        protected void onProgressUpdate(Integer... progress) {
+            setProgressPercent(progress[0]);
+        }
+
+        protected void onPostExecute(Integer result) {
+            if (isSuccessful)
+                mTextMessage.append("\nDone");
+            else
+                mTextMessage.append("\n"+noOfErrors+" number of errors found. Last one is at "+ lastErrorLocation);
+        }
+    }
+
+    // File handling Code
+
+    /* Checks if external storage is available for read and write */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+
+    /* Checks if external storage is available to at least read */
+    public boolean isExternalStorageReadable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state) ||
+                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+
+    public File PrepareDirectoryForStoringConfigFiles() {
+        // Get the directory for the app's private pictures directory.
+        File file = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS), "ProgTransitConfigFiles");
+        if (!file.mkdirs()) {
+            mTextMessage.append("\nDirectory not created");
+        } else {
+            mTextMessage.append("\nDone");
+        }
+        return file;
+    }
+
+    public void ListFiles (View v) {
+        if (isExternalStorageWritable()) {
+            File file = PrepareDirectoryForStoringConfigFiles();
+            if (file.exists())
+                mTextMessage.append("\nDone");
+            else
+                mTextMessage.append("\nOpssss...");
+        } else
+            mTextMessage.append("\nNo :( ......");
     }
 }

@@ -1,3 +1,9 @@
 <resources>
-    <string name="app_name">ProgTransit001</string>
+    <string name="app_name">Program the lights</string>
+    <string name="FilesView_BtnRefreshList">Refresh profile list</string>
+    <string name="FilesView_BtnAddNewItem">Add a new profile</string>
+    <string name="FilesView_NewFileName">New profile</string>
+    <string name="FilesView_UseThisProfile">Select this profile</string>
+    <string name="error_UnableToCreateFolder">Unable to create a working folder. Please contact the developer.</string>
+    <string name="error_FileAlreadyExist">File already exists.</string>
 </resources>

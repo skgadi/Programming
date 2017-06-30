@@ -25,6 +25,19 @@
         android:text="@string/device_program"
         android:visibility="invisible" />
 
+    <ProgressBar
+        android:id="@+id/ProgramProgressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/GetFilesList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="ListFiles"
+        android:text="Get Files List" />
+
     <FrameLayout
         android:id="@+id/content"
         android:layout_width="match_parent"
