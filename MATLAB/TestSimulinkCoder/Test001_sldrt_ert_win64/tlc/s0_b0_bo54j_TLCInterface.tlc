@@ -1,0 +1,132 @@
+%implements s0_b0_bo54j_TLCInterface "C"
+
+%function getOutputAddr_0_0_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<116d*//*@>1167*/Test001_B./*@>1172*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutput_0_0_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>117f*/Test001_B./*@>118b*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getInputAddr_0_1_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<11b0*//*@>11aa*/Test001_B./*@>11b5*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getInput_0_1_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>11c2*/Test001_B./*@>11ce*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getDWorkAddr_0_1_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<11df*//*@>11d9*/Test001_DW./*@>11e4*/Scope_PWORK"
+%endfunction
+
+%function getDWork_0_1_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>11f1*/Test001_DW./*@>11fd*/Scope_PWORK"
+%endfunction
+
+%function getDWorkAddr_0_2_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<1222*//*@>121c*/Test001_DW./*@>1227*/RealTimeSynchronization_PWORK"
+%endfunction
+
+%function getDWork_0_2_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>1234*/Test001_DW./*@>1240*/RealTimeSynchronization_PWORK"
+%endfunction
+
+%function getParamAddr_0_2_0_0_1_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<1253*//*@>124d*/Test001_P./*@>1258*/RealTimeSynchronization_MaxMissedTicks"
+%endfunction
+
+%function getParam_0_2_0_0_1_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>1265*/Test001_P./*@>1271*/RealTimeSynchronization_MaxMissedTicks"
+%endfunction
+
+%function getParamAddr_0_2_0_0_1_1(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<1282*//*@>127c*/Test001_P./*@>1287*/RealTimeSynchronization_YieldWhenWaiting"
+%endfunction
+
+%function getParam_0_2_0_0_1_1(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>1294*/Test001_P./*@>12a0*/RealTimeSynchronization_YieldWhenWaiting"
+%endfunction
+
+%function getOutputAddr_0_0_0_1_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<12c3*//*@>12bd*/Test001_B./*@>12c8*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutput_0_0_0_1_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>12d5*/Test001_B./*@>12e1*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutputAddr_0_0_0_2_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<1306*//*@>1300*/Test001_B./*@>130b*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutput_0_0_0_2_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>1318*/Test001_B./*@>1324*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutputAddr_0_0_0_3_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<1349*//*@>1343*/Test001_B./*@>134e*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutput_0_0_0_3_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>135b*/Test001_B./*@>1367*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutputAddr_0_0_0_4_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<138c*//*@>1386*/Test001_B./*@>1391*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutput_0_0_0_4_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>139e*/Test001_B./*@>13aa*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutputAddr_0_0_0_5_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<13e3*//*@>13dd*/Test001_B./*@>13e8*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getOutput_0_0_0_5_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>13f5*/Test001_B./*@>1401*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getInputAddr_0_1_0_5_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<143a*//*@>1434*/Test001_B./*@>143f*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getInput_0_1_0_5_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>144c*/Test001_B./*@>1458*/AnalogInput" + SLibCG_ArrayIndexer(ucv, lcv, sigIdx)
+%endfunction
+
+%function getDWorkAddr_0_1_0_5_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&/*@<1469*//*@>1463*/Test001_DW./*@>146e*/Scope_PWORK"
+%endfunction
+
+%function getDWork_0_1_0_5_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "/*@>147b*/Test001_DW./*@>1487*/Scope_PWORK"
+%endfunction
+

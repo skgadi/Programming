@@ -1,0 +1,48 @@
+%implements s0_b0_bo54j_ModelInitialize "C"
+
+%function ModelInitialize(block, system) Output
+%assign cfgTxt = ""
+%openfile cfgTxt
+%assign localVarDecl = ""
+%assign tlcSetupRuntimeResourcesFcnOfS0B0 = OpaqueTLCBlockFcn("SetupRuntimeResources", 0, 0, 0, 5)
+%assign tlcStartFcnOfS0B0 = OpaqueTLCBlockFcn("Start", 0, 0, 0, 5)
+%assign tlcStartFcnOfS0B1 = OpaqueTLCBlockFcn("Start", 0, 1, 0, 5)
+%assign tlcInitializeConditionsFcnOfS0B0 = OpaqueTLCBlockFcn("InitializeConditions", 0, 0, 0, 5)
+%assign tlcEnableFcnOfS0B0 = OpaqueTLCBlockFcn("Enable", 0, 0, 0, 5)
+%<SLibInsertAsyncTaskInitializeCode(system)>
+%<SLibWriteMachineInitialize()>
+%if !WHITE_SPACE(tlcSetupRuntimeResourcesFcnOfS0B0)
+/* SetupRuntimeResources for M-S-Function: '<Root>/Analog Input' */
+%<SLibCG_DumpSSCode("/*@[107e*/",tlcSetupRuntimeResourcesFcnOfS0B0,"/*@]*/")>\
+%endif
+%<SLibCGIRDumpSystemUserCode(0, "Start", "Header")>\
+%<SLibCGIRDumpSystemUserCode(0, "Start", "Body")>\
+%if !WHITE_SPACE(tlcStartFcnOfS0B0)
+/* Start for M-S-Function: '<Root>/Analog Input' */
+%<SLibCG_DumpSSCode("/*@[1082*/",tlcStartFcnOfS0B0,"/*@]*/")>\
+%endif
+%if !WHITE_SPACE(tlcStartFcnOfS0B1)
+/* Start for Scope: '<Root>/Scope' */
+%<SLibCG_DumpSSCode("/*@[1085*/",tlcStartFcnOfS0B1,"/*@]*/")>\
+%endif
+%<SLibCGIRDumpSystemUserCode(0, "Start", "Trailer")>\
+%if !WHITE_SPACE(tlcInitializeConditionsFcnOfS0B0)
+/* InitializeConditions for M-S-Function: '<Root>/Analog Input' */
+%<SLibCG_DumpSSCode("/*@[1088*/",tlcInitializeConditionsFcnOfS0B0,"/*@]*/")>\
+%endif
+%if !WHITE_SPACE(tlcEnableFcnOfS0B0)
+/* Enable for M-S-Function: '<Root>/Analog Input' */
+%<SLibCG_DumpSSCode("/*@[108a*/",tlcEnableFcnOfS0B0,"/*@]*/")>\
+%endif
+%<SLibInsertInitPeriodicCStatesFcn(system)>
+%closefile cfgTxt
+%<cfgTxt>
+%endfunction
+%function ModelInitializeFcnProtoType(block, system) Output
+%assign fcnProtoType = ""
+%openfile fcnProtoType
+static void ModelInitialize(\
+%assign comma = ""
+%closefile fcnProtoType
+%<SLibCG_SetFcnProtoType(0, 5, fcnProtoType)>
+%endfunction

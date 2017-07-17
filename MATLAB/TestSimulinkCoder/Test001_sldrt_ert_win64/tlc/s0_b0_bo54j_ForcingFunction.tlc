@@ -1,0 +1,22 @@
+%implements s0_b0_bo54j_ForcingFunction "C"
+
+%function ForcingFunction(block, system) Output
+%assign cfgTxt = ""
+%openfile cfgTxt
+%assign localVarDecl = ""
+%assign tlcForcingFunctionFcnOfS0B0 = OpaqueTLCBlockFcn("ForcingFunction", 0, 0, 0, 3)
+%if !WHITE_SPACE(tlcForcingFunctionFcnOfS0B0)
+/* ForcingFunction for M-S-Function: '<Root>/Analog Input' */
+%<SLibCG_DumpSSCode("/*@[1069*/",tlcForcingFunctionFcnOfS0B0,"/*@]*/")>\
+%endif
+%closefile cfgTxt
+%<cfgTxt>
+%endfunction
+%function ForcingFunctionFcnProtoType(block, system) Output
+%assign fcnProtoType = ""
+%openfile fcnProtoType
+static void ForcingFunction(\
+%assign comma = ""
+%closefile fcnProtoType
+%<SLibCG_SetFcnProtoType(0, 3, fcnProtoType)>
+%endfunction

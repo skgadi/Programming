@@ -1,0 +1,212 @@
+%implements s0_b0_0am3j_TLCInterface "C"
+
+%function getInputAddr_0_0_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_B.SineWave"
+%endfunction
+
+%function getInput_0_0_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_B.SineWave"
+%endfunction
+
+%function getDWorkAddr_0_0_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_DW.AnalogOutput_PWORK"
+%endfunction
+
+%function getDWork_0_0_0_0_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_DW.AnalogOutput_PWORK"
+%endfunction
+
+%function getParamAddr_0_0_0_0_1_2(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_MaxMissedTicks"
+%endfunction
+
+%function getParam_0_0_0_0_1_2(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_MaxMissedTicks"
+%endfunction
+
+%function getParamAddr_0_0_0_0_1_3(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_YieldWhenWaiting"
+%endfunction
+
+%function getParam_0_0_0_0_1_3(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_YieldWhenWaiting"
+%endfunction
+
+%function getParamAddr_0_0_0_0_1_4(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_Channels"
+%endfunction
+
+%function getParam_0_0_0_0_1_4(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_Channels"
+%endfunction
+
+%function getParamAddr_0_0_0_0_1_5(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_RangeMode"
+%endfunction
+
+%function getParam_0_0_0_0_1_5(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_RangeMode"
+%endfunction
+
+%function getParamAddr_0_0_0_0_1_6(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_VoltRange"
+%endfunction
+
+%function getParam_0_0_0_0_1_6(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_VoltRange"
+%endfunction
+
+%function getInputAddr_0_0_0_2_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_B.SineWave"
+%endfunction
+
+%function getInput_0_0_0_2_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_B.SineWave"
+%endfunction
+
+%function getDWorkAddr_0_0_0_2_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_DW.AnalogOutput_PWORK"
+%endfunction
+
+%function getDWork_0_0_0_2_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_DW.AnalogOutput_PWORK"
+%endfunction
+
+%function getParamAddr_0_0_0_2_1_2(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_MaxMissedTicks"
+%endfunction
+
+%function getParam_0_0_0_2_1_2(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_MaxMissedTicks"
+%endfunction
+
+%function getParamAddr_0_0_0_2_1_3(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_YieldWhenWaiting"
+%endfunction
+
+%function getParam_0_0_0_2_1_3(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_YieldWhenWaiting"
+%endfunction
+
+%function getParamAddr_0_0_0_2_1_4(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_Channels"
+%endfunction
+
+%function getParam_0_0_0_2_1_4(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_Channels"
+%endfunction
+
+%function getParamAddr_0_0_0_2_1_5(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_RangeMode"
+%endfunction
+
+%function getParam_0_0_0_2_1_5(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_RangeMode"
+%endfunction
+
+%function getParamAddr_0_0_0_2_1_6(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_VoltRange"
+%endfunction
+
+%function getParam_0_0_0_2_1_6(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_VoltRange"
+%endfunction
+
+%function getInputAddr_0_0_0_3_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_B.SineWave"
+%endfunction
+
+%function getInput_0_0_0_3_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_B.SineWave"
+%endfunction
+
+%function getDWorkAddr_0_0_0_3_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_DW.AnalogOutput_PWORK"
+%endfunction
+
+%function getDWork_0_0_0_3_0_0(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_DW.AnalogOutput_PWORK"
+%endfunction
+
+%function getParamAddr_0_0_0_3_1_2(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_MaxMissedTicks"
+%endfunction
+
+%function getParam_0_0_0_3_1_2(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_MaxMissedTicks"
+%endfunction
+
+%function getParamAddr_0_0_0_3_1_3(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_YieldWhenWaiting"
+%endfunction
+
+%function getParam_0_0_0_3_1_3(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_YieldWhenWaiting"
+%endfunction
+
+%function getParamAddr_0_0_0_3_1_4(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_Channels"
+%endfunction
+
+%function getParam_0_0_0_3_1_4(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_Channels"
+%endfunction
+
+%function getParamAddr_0_0_0_3_1_5(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_RangeMode"
+%endfunction
+
+%function getParam_0_0_0_3_1_5(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_RangeMode"
+%endfunction
+
+%function getParamAddr_0_0_0_3_1_6(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "&untitled_P.AnalogOutput_VoltRange"
+%endfunction
+
+%function getParam_0_0_0_3_1_6(opaqueBlock, block, lcv, ucv, sigIdx, reim) void
+
+%return "untitled_P.AnalogOutput_VoltRange"
+%endfunction
+
