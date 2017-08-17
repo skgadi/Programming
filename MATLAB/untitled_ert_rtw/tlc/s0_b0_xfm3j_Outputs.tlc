@@ -1,0 +1,26 @@
+%implements s0_b0_xfm3j_Outputs "C"
+
+%function Outputs(block, system) Output
+%assign cfgTxt = ""
+%openfile cfgTxt
+%assign localVarDecl = ""
+%assign tlcOutputsFcnOfS0B0 = OpaqueTLCBlockFcn("Outputs", 0, 0, 0, 0)
+/* Sin: '<Root>/Sine Wave' */
+/*@>779*/rtDW./*@>96f*/SineWave/*@>21d*/ = /*@>6d2*/sin(%<SLibCG_DumpSSCode("/*@[7bd*/",(LibGetTaskTime(0)),"/*@]*/")>);
+%if !WHITE_SPACE(tlcOutputsFcnOfS0B0)
+/* S-Function (sldrtao): '<Root>/Analog Output' */
+%<SLibCG_DumpSSCode("/*@[7c2*/",tlcOutputsFcnOfS0B0,"/*@]*/")>\
+%endif
+%<SLibInsertSolverResetCode()>\
+%closefile cfgTxt
+%<cfgTxt>
+%<LibSetSystemField(system, "CachedOutputLocalVars", localVarDecl)>
+%endfunction
+%function OutputsFcnProtoType(block, system) Output
+%assign fcnProtoType = ""
+%openfile fcnProtoType
+static void Outputs(\
+%assign comma = ""
+%closefile fcnProtoType
+%<SLibCG_SetFcnProtoType(0, 0, fcnProtoType)>
+%endfunction
