@@ -3,7 +3,7 @@
     <string name="FilesView_BtnRefreshList">Refresh profile list</string>
     <string name="FilesView_BtnAddNewItem">Add a new profile</string>
     <string name="FilesView_NewFileName">New profile</string>
+    <string name="FilesView_DeleteProfile">Delete profile</string>
     <string name="FilesView_UseThisProfile">Select this profile</string>
-    <string name="error_UnableToCreateFolder">Unable to create a working folder. Please contact the developer.</string>
-    <string name="error_FileAlreadyExist">File already exists.</string>
+    <string name="error_DatabaseAlreadyExist">Database already exists.</string>
 </resources>

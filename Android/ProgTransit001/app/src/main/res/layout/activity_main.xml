@@ -9,12 +9,8 @@
     tools:layout_editor_absoluteX="0dp">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="0dp"
-        android:layout_marginLeft="0dp"
-        android:layout_marginRight="0dp"
-        android:layout_marginTop="0dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -22,7 +18,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
-            android:id="@+id/MV_FilesList"
+            android:id="@+id/MV_Databases"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -76,6 +72,14 @@
                     android:onClick="FL_OC_ProfileSelected"
                     android:text="@string/FilesView_UseThisProfile" />
 
+                <Button
+                    android:id="@+id/FL_DeleteProfileBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="FL_OC_DeleteProfile"
+                    android:text="@string/FilesView_DeleteProfile" />
+
             </LinearLayout>
 
             <ScrollView
@@ -99,20 +103,37 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/MV_AssignInputs"
+            android:id="@+id/MV_States"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:visibility="visible"
             android:orientation="vertical"
             tools:layout_editor_absoluteX="8dp"
             tools:layout_editor_absoluteY="8dp">
 
-            <Button
-                android:id="@+id/button8"
+            <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:onClick="TempButton"
-                android:text="Button" />
+                android:layout_height="match_parent">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" >
+
+                    <Spinner
+                        android:id="@+id/SV_CycleSelect"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+
+                    <Button
+                        android:id="@+id/button8"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:onClick="BackToFilesList"
+                        android:text="Back" />
+                </LinearLayout>
+            </ScrollView>
         </LinearLayout>
 
     </LinearLayout>
