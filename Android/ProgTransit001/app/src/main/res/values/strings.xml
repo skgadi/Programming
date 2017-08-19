@@ -1,9 +1,81 @@
 <resources>
     <string name="app_name">Program the lights</string>
+    <string name="LoadingView">Your data is being proceed.\nPlease wait ...</string>
     <string name="FilesView_BtnRefreshList">Refresh profile list</string>
     <string name="FilesView_BtnAddNewItem">Add a new profile</string>
     <string name="FilesView_NewFileName">New profile</string>
     <string name="FilesView_DeleteProfile">Delete profile</string>
     <string name="FilesView_UseThisProfile">Select this profile</string>
     <string name="error_DatabaseAlreadyExist">Database already exists.</string>
+    <string name="LinkText_GotoDatabase">Change profile</string>
+    <string name="LinkText_GotoStates">Edit states</string>
+    <string name="LinkText_GotoEvents">Edit events</string>
+    <string name="LinkText_GotoSettings">Settings</string>
+    <string name="LinkText_GotoProgramming">Programming window</string>
+    <string-array name="CyclesNames">
+        <item>Default cycle</item>
+        <item>Cycle 01</item>
+        <item>Cycle 02</item>
+        <item>Cycle 03</item>
+        <item>Cycle 04</item>
+        <item>Cycle 05</item>
+        <item>Cycle 06</item>
+        <item>Cycle 07</item>
+        <item>Cycle 08</item>
+        <item>Cycle 09</item>
+        <item>Cycle 10</item>
+        <item>Cycle 11</item>
+        <item>Cycle 12</item>
+        <item>Cycle 13</item>
+        <item>Cycle 14</item>
+        <item>Cycle 15</item>
+        <item>Cycle 16</item>
+    </string-array>
+    <string name="StatesView_AddAState">Append a state</string>
+    <string-array name="StatesCaptions">
+        <item>Period</item>
+        <item>Pin 01</item>
+        <item>Pin 02</item>
+        <item>Pin 03</item>
+        <item>Pin 04</item>
+        <item>Pin 05</item>
+        <item>Pin 06</item>
+        <item>Pin 07</item>
+        <item>Pin 08</item>
+        <item>Pin 09</item>
+        <item>Pin 10</item>
+        <item>Pin 11</item>
+        <item>Pin 12</item>
+        <item>Audio</item>
+    </string-array>
+    <string name="StatesView_Delete">Delete</string>
+    <string-array name="EventsCaptions">
+        <item>Event 00</item>
+        <item>Event 01</item>
+        <item>Event 02</item>
+        <item>Event 03</item>
+        <item>Event 04</item>
+        <item>Event 05</item>
+        <item>Event 06</item>
+        <item>Event 07</item>
+        <item>Event 08</item>
+        <item>Event 09</item>
+        <item>Event 10</item>
+        <item>Event 11</item>
+    </string-array>
+    <string name="StartTime">Start at:</string>
+    <string name="EndTime">End at:</string>
+    <string-array name="EventsTableCaptions">
+        <item>#</item>
+        <item>Cycle type</item>
+        <item>Start time</item>
+        <item>End time</item>
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
 </resources>

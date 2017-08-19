@@ -18,6 +18,29 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
+            android:id="@+id/MV_Loading"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:visibility="gone"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textView6"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/LoadingView"
+                android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/MV_Databases"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -107,33 +130,224 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:visibility="visible"
             android:orientation="vertical"
+            android:visibility="gone"
             tools:layout_editor_absoluteX="8dp"
             tools:layout_editor_absoluteY="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Spinner
+                        android:id="@+id/SV_CycleSelect"
+                        style="@style/spinner_style"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:dropDownWidth="match_parent"
+                        android:entries="@array/CyclesNames" />
+
+                    <Button
+                        android:id="@+id/SV_AppendRecordToStates"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:onClick="AppendAStateRecord"
+                        android:text="@string/StatesView_AddAState" />
+
+                    <Button
+                        android:id="@+id/SV_ToEvents"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:onClick="LinkToEvents"
+                        android:text="@string/LinkText_GotoEvents" />
+
+                    <Button
+                        android:id="@+id/SV_ToDatabases"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:onClick="LinkToDatabases"
+                        android:text="@string/LinkText_GotoDatabase" />
+
+                </LinearLayout>
+
+                <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:descendantFocusability="beforeDescendants"
+                            android:focusableInTouchMode="true"
+                            android:orientation="vertical">
+
+                            <TableLayout
+                                android:id="@+id/SV_StatesTable"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent">
+
+                            </TableLayout>
+
+                        </LinearLayout>
+                    </HorizontalScrollView>
+                </ScrollView>
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/MV_Events"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/EV_LinkToSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="LinkToSettings"
+                    android:text="@string/LinkText_GotoSettings" />
+
+                <Button
+                    android:id="@+id/EV_LinkToProgramming"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="LinkToProgrammingWind"
+                    android:text="@string/LinkText_GotoProgramming" />
+
+                <Button
+                    android:id="@+id/EV_LinkToDatabases"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="LinkToDatabases"
+                    android:text="@string/LinkText_GotoDatabase" />
+
+                <Button
+                    android:id="@+id/EV_LinkToStates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="LinkToStates"
+                    android:text="@string/LinkText_GotoStates" />
+
+            </LinearLayout>
 
             <ScrollView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-                <LinearLayout
+                <HorizontalScrollView
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical" >
+                    android:layout_height="wrap_content">
 
-                    <Spinner
-                        android:id="@+id/SV_CycleSelect"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:descendantFocusability="beforeDescendants"
+                        android:focusableInTouchMode="true"
+                        android:orientation="vertical">
 
-                    <Button
-                        android:id="@+id/button8"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:onClick="BackToFilesList"
-                        android:text="Back" />
-                </LinearLayout>
+                        <TableLayout
+                            android:id="@+id/EV_EventsTable"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent">
+
+                        </TableLayout>
+
+                    </LinearLayout>
+                </HorizontalScrollView>
             </ScrollView>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/MV_Settings"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:visibility="gone"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/ST_LinkToProgram"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="LinkToProgrammingWind"
+                    android:text="@string/LinkText_GotoProgramming" />
+
+                <Button
+                    android:id="@+id/ST_LinkToDatabase"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="LinkToDatabases"
+                    android:text="@string/LinkText_GotoDatabase" />
+
+                <Button
+                    android:id="@+id/ST_LinkToStates"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="LinkToStates"
+                    android:text="@string/LinkText_GotoStates" />
+
+                <Button
+                    android:id="@+id/ST_LinkToEvents"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="LinkToEvents"
+                    android:text="@string/LinkText_GotoEvents" />
+            </LinearLayout>
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:descendantFocusability="beforeDescendants"
+                        android:focusableInTouchMode="true"
+                        android:orientation="vertical" />
+                </HorizontalScrollView>
+            </ScrollView>
+
         </LinearLayout>
 
     </LinearLayout>
