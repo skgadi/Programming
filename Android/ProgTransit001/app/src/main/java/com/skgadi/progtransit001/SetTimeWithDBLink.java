@@ -18,7 +18,6 @@ import java.util.Calendar;
 class SetTimeWithDBLink implements View.OnClickListener, TimePickerDialog.OnTimeSetListener {
 
     private Button Button;
-    private Calendar myCalendar;
     Context ctx;
     String Table, KeyCol, KeyVal, HrsColumn, MinColumn;
     SQLiteDatabase Database;
@@ -26,7 +25,6 @@ class SetTimeWithDBLink implements View.OnClickListener, TimePickerDialog.OnTime
                              String KeyCol, String KeyVal, String HrsColumn, String MinColumn){
         this.Button = Button;
         this.Button.setOnClickListener(this);
-        this.myCalendar = Calendar.getInstance();
         this.ctx = ctx;
 
         this.Database = Database;
@@ -39,7 +37,6 @@ class SetTimeWithDBLink implements View.OnClickListener, TimePickerDialog.OnTime
 
     @Override
     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-        // TODO Auto-generated method stub
         this.Button.setText( String.format("%02d", hourOfDay) + ":" + String.format("%02d", minute));
 
         ContentValues data=new ContentValues();
@@ -50,8 +47,27 @@ class SetTimeWithDBLink implements View.OnClickListener, TimePickerDialog.OnTime
 
     @Override
     public void onClick(View view) {
-        int hour = myCalendar.get(Calendar.HOUR_OF_DAY);
-        int minute = myCalendar.get(Calendar.MINUTE);
-        new TimePickerDialog(ctx, this, hour, minute, true).show();
+        String TimeStr = Button.getText().toString();
+        String[] TimeSplit = TimeStr.split(":");
+        new TimePickerDialog(ctx, this, Integer.parseInt(TimeSplit[0]),
+                Integer.parseInt(TimeSplit[1]), true).show();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

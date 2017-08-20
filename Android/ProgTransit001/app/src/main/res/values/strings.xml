@@ -7,6 +7,7 @@
     <string name="FilesView_DeleteProfile">Delete profile</string>
     <string name="FilesView_UseThisProfile">Select this profile</string>
     <string name="error_DatabaseAlreadyExist">Database already exists.</string>
+    <string name="error_NumberNotInRange">This is not a valid integer number. Enter a number in the range</string>
     <string name="LinkText_GotoDatabase">Change profile</string>
     <string name="LinkText_GotoStates">Edit states</string>
     <string name="LinkText_GotoEvents">Edit events</string>
@@ -32,6 +33,7 @@
         <item>Cycle 16</item>
     </string-array>
     <string name="StatesView_AddAState">Append a state</string>
+    <string name="Error_ReachedStatesLimit">Reached maximum limit. Cannot add more states</string>
     <string-array name="StatesCaptions">
         <item>Period</item>
         <item>Pin 01</item>
@@ -77,5 +79,45 @@
         <item>Friday</item>
         <item>Saturday</item>
         <item>Sunday</item>
+    </string-array>
+    <string-array name="MonthsArray">
+        <item>January</item>
+        <item>February</item>
+        <item>March</item>
+        <item>April</item>
+        <item>May</item>
+        <item>June</item>
+        <item>July</item>
+        <item>August</item>
+        <item>September</item>
+        <item>October</item>
+        <item>November</item>
+        <item>December</item>
+    </string-array>
+    <string-array name="SettingsLegends">
+        <item>Time zone sign</item>
+        <item>Time zone value</item>
+        <item>Day light saving start day</item>
+        <item>Day light saving End day</item>
+        <item>Cycle delay</item>
+        <item>Light blink on time</item>
+        <item>Light blink off time</item>
+        <item>Light blink for last X seconds</item>
+        <item>Normal audio on time</item>
+        <item>Normal audio off time</item>
+        <item>Special audio on time</item>
+        <item>Special audio off time</item>
+        <item>Special audio for last x seconds</item>
+        <item>GPS-time sync every x seconds</item>
+        <item>GPS-time sync at start</item>
+        <item>GPS-time sync every day at</item>
+    </string-array>
+    <string-array name="SettingsCaptions">
+        <item>Property</item>
+        <item>Value</item>
+    </string-array>
+    <string-array name="Signs">
+        <item>Negative (-)</item>
+        <item>Positive (+)</item>
     </string-array>
 </resources>

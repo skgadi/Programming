@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.InputFilter;
@@ -22,6 +23,7 @@ import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -41,6 +43,15 @@ public class MainActivity extends AppCompatActivity {
         PROGRAM
     }
     int EVENTS_COUNT = 12;
+    int TOTAL_STATES_COUNT = 160;
+    Integer[] SettingsDefault = {
+            -1, 6, 30, 1, 4, 1, 10, -10, 600, 400, 4, 80, 1920, 80, 420, 5, 90000, 1, 5, 0
+    };
+    Integer[][] SettingsLimits = {
+            {-1, 1}, {0, 23}, {0, 59}, {1, 31}, {1, 12}, {1, 31}, {1, 12}, {-32767, 32767},
+            {0, 2550}, {0, 2550}, {0, 255}, {0, 2550}, {0, 2550}, {0, 2550}, {0, 2550}, {0, 255},
+            {0, 90000}, {0, 1}, {0, 23}, {0, 59}
+    };
     private LinearLayout MV_Databases;
     private LinearLayout MV_States;
     private LinearLayout MV_Events;
@@ -61,6 +72,8 @@ public class MainActivity extends AppCompatActivity {
     };
 
     TableLayout EV_EventsTable;
+
+    TableLayout ST_SettingsTable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,10 +107,12 @@ public class MainActivity extends AppCompatActivity {
 
         EV_EventsTable =  (TableLayout) findViewById(R.id.EV_EventsTable);
 
+        ST_SettingsTable = (TableLayout) findViewById(R.id.ST_SettingsTable);
+
         GLOBAL_SetViewState(GLOBAL_DEVICE_STATE.DATABASES);
         ListAllFilesList();
     }
-    /*----- Global view functions -----*/
+    /*----- Common functions -----*/
     private void GLOBAL_SetViewState (GLOBAL_DEVICE_STATE state) {
         MV_Databases.setVisibility(View.GONE);
         MV_States.setVisibility(View.GONE);
@@ -135,14 +150,39 @@ public class MainActivity extends AppCompatActivity {
             TempButton = new Button(this);
             TempButton.setText(Captions[i]);
             TempButton.setEnabled(false);
+            TempButton.setBackgroundColor(Color.BLACK);
+            TempButton.setTextColor(Color.WHITE);
             TempRow.addView(TempButton);;
         }
         Table.addView(TempRow);
+    }
+    private void AddDisabledButtonView (TableRow Row, String Value) {
+        Button TempButton;
+        TempButton = new Button(this);
+        TempButton.setText(Value);
+        TempButton.setEnabled(false);
+        TempButton.setBackgroundColor(Color.WHITE);
+        TempButton.setTextColor(Color.BLACK);
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setShape(GradientDrawable.RECTANGLE);
+        drawable.setStroke(2, Color.GRAY);
+        drawable.setColor(Color.WHITE);
+        TempButton.setGravity(Gravity.LEFT|Gravity.CENTER_VERTICAL);
+        TempButton.setPadding(25, 0, 25, 0);
+        TempButton.setBackgroundDrawable(drawable);
+        Row.addView(TempButton);
     }
     private String StringsToTimeDisplay (String Hours, String Minutes) {
         String Out;
         Out = String.format("%02d", Integer.parseInt(Hours)) + ":" +
                 String.format("%02d", Integer.parseInt(Minutes));
+        return Out;
+    }
+    private String StringsToPartialDateDisplay (String Day, String Month) {
+        String[] Months = getResources().getStringArray(R.array.MonthsArray);
+        String Out;
+        Out = String.format("%02d", Integer.parseInt(Day)) + "-" +
+                Months[Integer.parseInt(Month)-1];
         return Out;
     }
     public void LinkToDatabases (View v) {
@@ -240,15 +280,34 @@ public class MainActivity extends AppCompatActivity {
                 "PRIMARY KEY (`EventID`)"+
                 ");");
         NewDatabase.execSQL("CREATE TABLE IF NOT EXISTS `Settings` (" +
-                "`Attribute`    VARCHAR(20) NOT NULL," +
-                "`Value`        VARCHAR(20) NOT NULL," +
-                "PRIMARY KEY (`Attribute`)"+
+                "`Key`          int NOT NULL," +
+                "`Setting000`   int NOT NULL," +
+                "`Setting001`   int NOT NULL," +
+                "`Setting002`   int NOT NULL," +
+                "`Setting003`   int NOT NULL," +
+                "`Setting004`   int NOT NULL," +
+                "`Setting005`   int NOT NULL," +
+                "`Setting006`   int NOT NULL," +
+                "`Setting007`   int NOT NULL," +
+                "`Setting008`   int NOT NULL," +
+                "`Setting009`   int NOT NULL," +
+                "`Setting010`   int NOT NULL," +
+                "`Setting011`   int NOT NULL," +
+                "`Setting012`   int NOT NULL," +
+                "`Setting013`   int NOT NULL," +
+                "`Setting014`   int NOT NULL," +
+                "`Setting015`   int NOT NULL," +
+                "`Setting016`   int NOT NULL," +
+                "`Setting017`   int NOT NULL," +
+                "`Setting018`   int NOT NULL," +
+                "`Setting019`   int NOT NULL," +
+                "PRIMARY KEY (`Key`)"+
                 ");");
     }
     private void PopulateEssentialTables(SQLiteDatabase NewDatabase) {
         ContentValues data;
         //----- Populating Events table
-        for (int i= 0; i<EVENTS_COUNT; i++) {
+        for (int i = 0; i<EVENTS_COUNT; i++) {
             data = new ContentValues();
             data.put("EventID", i);
             data.put("CycleType",0);
@@ -265,11 +324,16 @@ public class MainActivity extends AppCompatActivity {
             data.put("Day6", 0);
             NewDatabase.insert("Events", null, data);
         }
+        //----- Populating Settings tabe
+        data = new ContentValues();
+        data.put("Key", 1);
+        for (int i = 0; i<SettingsDefault.length; i++)
+            data.put("Setting"+String.format("%03d", i), SettingsDefault[i]);
+        NewDatabase.insert("Settings", null, data);
     }
     public void FL_OC_DeleteProfile (View v) {
         String DatabaseToDelete = "GSK_" +
                 ((RadioButton) findViewById(FL_ProfilesList.getCheckedRadioButtonId())).getText().toString();
-        //Toast.makeText(context, DatabaseToDelete, Toast.LENGTH_SHORT).show();
         MainContext.deleteDatabase(DatabaseToDelete);
         ListAllFilesList();
     }
@@ -313,7 +377,7 @@ public class MainActivity extends AppCompatActivity {
                 EditText Temp_Period = new EditText(MainContext);
                 Temp_Period.setText(TempStr);
                 Temp_Period.setInputType(InputType.TYPE_CLASS_NUMBER);
-                Temp_Period.setFilters(new InputFilter[]{ new InputFilterMinMax("0", "255")});
+                Temp_Period.setFilters(new InputFilter[]{ new InputFilterMinMax(MainContext, 0, 255)});
                 Temp_Period.addTextChangedListener(new TextChangeUpdateDatabase(Database, "States", "Key", KeyVal, "Period"));
                 TempRow.addView(Temp_Period);
                 //----- Pins
@@ -350,11 +414,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void AppendAStateRecord (View v) {
-        Database.execSQL("INSERT INTO `States` (`CycleType`, `Period`, `D00`, `D01`, `D02`," +
-                " `D03`, `D04`, `D05`, `D06`, `D07`, `D08`, `D09`, `D10`, `D11`, `Audio`)" +
-                " VALUES (" + SV_CycleSelect.getSelectedItemPosition() +
-                ", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);");
-        SyncStatesViewWithCycleType();
+        Cursor TempCursor = null;
+        TempCursor = Database.rawQuery("SELECT * FROM `States`;", null);
+        if (TempCursor.getCount() <= TOTAL_STATES_COUNT) {
+            Database.execSQL("INSERT INTO `States` (`CycleType`, `Period`, `D00`, `D01`, `D02`," +
+                    " `D03`, `D04`, `D05`, `D06`, `D07`, `D08`, `D09`, `D10`, `D11`, `Audio`)" +
+                    " VALUES (" + SV_CycleSelect.getSelectedItemPosition() +
+                    ", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);");
+            SyncStatesViewWithCycleType();
+        } else {
+            Toast.makeText(MainContext,getResources().getString(
+                    R.string.Error_ReachedStatesLimit), Toast.LENGTH_SHORT).show();
+        }
     }
     /*----- MV_Events Functions -----*/
     private void PopulateEventsTable() {
@@ -364,7 +435,7 @@ public class MainActivity extends AppCompatActivity {
         Spinner TempSpinner;
         CheckBox TempCheckBox;
         String EventID;
-        String[] CycleNames= getResources().getStringArray(R.array.CyclesNames);
+        String[] CycleNames = getResources().getStringArray(R.array.CyclesNames);
         EV_EventsTable.removeAllViews();
 
         Cursor TempCursor = null;
@@ -378,11 +449,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 TempRow = new TableRow(MainContext);
                 //----- Even ID
-                TempButton = new Button(MainContext);
-                TempButton.setEnabled(false);
                 EventID = TempCursor.getString(TempCursor.getColumnIndex("EventID"));
-                TempButton.setText(EventID);
-                TempRow.addView(TempButton);
+                AddDisabledButtonView(TempRow, String.format("%02d", Integer.parseInt(EventID)));
                 //----- Cycle Type
                 TempSpinner = new Spinner(MainContext);
                 ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
@@ -413,7 +481,7 @@ public class MainActivity extends AppCompatActivity {
                 //------ Days
                 for (int j = 0; j < 7; j++) {
                     TempCheckBox = new CheckBox(MainContext);
-                    TempCheckBox.setChecked(true);
+                    //TempCheckBox.setChecked(true);
                     TempCheckBox.setMinimumWidth(100);
                     TempCheckBox.setChecked(false);
                     if (Integer.parseInt(TempCursor.getString(TempCursor.getColumnIndex("Day"+j)))==1)
@@ -436,8 +504,124 @@ public class MainActivity extends AppCompatActivity {
         PopulateEventsTable();
     }
     /*----- MV_Settings Functions -----*/
-    private void MV_Settings_ResetView () {
+    private void PopulateSettingsTable (){
+        String[] Captions = getResources().getStringArray(R.array.SettingsCaptions);
+        String[] Legends = getResources().getStringArray(R.array.SettingsLegends);
+        TableRow TempRow;
+        EditText TempEditText;
+        Button TempButton;
+        Spinner TempSpinner;
+        CheckBox TempCheckBox;
+        Integer Key;
+        Integer Value;
+        Integer Iter=0;
+        ST_SettingsTable.removeAllViews();
+        Cursor TempCursor = null;
+        TempCursor = Database.rawQuery("SELECT * FROM `Settings`;", null);
+        TempCursor.moveToFirst();
+        Key = TempCursor.getInt(TempCursor.getColumnIndex("Key"));
 
+        InsertCaptionButtonsRow(ST_SettingsTable, Captions);
+        //----- Timezone sign
+        TempRow = new TableRow(MainContext);
+        AddDisabledButtonView(TempRow, Legends[Iter]);
+        String[] Signs = getResources().getStringArray(R.array.Signs);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, Signs);
+        TempSpinner = new Spinner(MainContext);
+        TempSpinner.setAdapter(adapter);
+        Value = TempCursor.getInt(TempCursor.getColumnIndex("Setting000"));
+        TempSpinner.setSelection(Value);
+        TempSpinner.setOnItemSelectedListener(new SpnnerDatabaseLink(
+                Database, "Settings", "Key", Key.toString(), "Setting000"
+        ));
+        Iter++;
+        TempRow.addView(TempSpinner);
+        ST_SettingsTable.addView(TempRow);
+        //----- Timezone value
+        TempRow = new TableRow(MainContext);
+        AddDisabledButtonView(TempRow, Legends[Iter]);
+        TempButton = new Button(MainContext);
+        TempButton.setText(StringsToTimeDisplay(
+                TempCursor.getString(TempCursor.getColumnIndex("Setting001")),
+                TempCursor.getString(TempCursor.getColumnIndex("Setting002"))));
+        new SetTimeWithDBLink(TempButton, MainContext, Database, "Settings", "Key", Key.toString(),
+                "Setting001", "Setting002");
+        Iter++;
+        TempRow.addView(TempButton);
+        ST_SettingsTable.addView(TempRow);
+        //----- Daylight Start
+        TempRow = new TableRow(MainContext);
+        AddDisabledButtonView(TempRow, Legends[Iter]);
+        TempButton = new Button(MainContext);
+        TempButton.setText(StringsToPartialDateDisplay(
+                TempCursor.getString(TempCursor.getColumnIndex("Setting003")),
+                TempCursor.getString(TempCursor.getColumnIndex("Setting004"))));
+        new SetDateWithDBLink(TempButton, MainContext, Database, "Settings", "Key", Key.toString(),
+                "Setting003", "Setting004");
+        Iter++;
+        TempRow.addView(TempButton);
+        ST_SettingsTable.addView(TempRow);
+        //----- Daylight End
+        TempRow = new TableRow(MainContext);
+        AddDisabledButtonView(TempRow, Legends[Iter]);
+        TempButton = new Button(MainContext);
+        TempButton.setText(StringsToPartialDateDisplay(
+                TempCursor.getString(TempCursor.getColumnIndex("Setting005")),
+                TempCursor.getString(TempCursor.getColumnIndex("Setting006"))));
+        new SetDateWithDBLink(TempButton, MainContext, Database, "Settings", "Key", Key.toString(),
+                "Setting005", "Setting006");
+        Iter++;
+        TempRow.addView(TempButton);
+        ST_SettingsTable.addView(TempRow);
+        //----- EditNumbers
+        for (int i=0; i<10; i++) {
+            if (Iter%5 == 0)
+                InsertCaptionButtonsRow(ST_SettingsTable, Captions);
+            TempRow = new TableRow(MainContext);
+            AddDisabledButtonView(TempRow, Legends[Iter]);
+            TempEditText = new EditText(MainContext);
+            TempEditText.setText(TempCursor.getString(TempCursor.getColumnIndex("Setting"+String.format("%03d", i+7))));
+            TempEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
+            TempEditText.setFilters(new InputFilter[]{new InputFilterMinMax(
+                    MainContext, SettingsLimits[i+7][0], SettingsLimits[i+7][1]
+            )});
+            TempEditText.addTextChangedListener(new TextChangeUpdateDatabase(
+                    Database, "Settings", "Key", Key.toString(), "Setting"+String.format("%03d", i+7)));
+            Iter++;
+            TempRow.addView(TempEditText);
+            ST_SettingsTable.addView(TempRow);
+        }
+        //----- Sync at the start
+        TempRow = new TableRow(MainContext);
+        AddDisabledButtonView(TempRow, Legends[Iter]);
+        TempCheckBox = new CheckBox(MainContext);
+        TempCheckBox.setMinimumWidth(100);
+        TempCheckBox.setChecked(false);
+        if (TempCursor.getInt(TempCursor.getColumnIndex("Setting017"))==1)
+            TempCheckBox.setChecked(true);
+        TempCheckBox.setOnCheckedChangeListener(new CheckboxDBLink(
+                Database, "Settings", "Key", Key.toString(), "Setting017"));
+        Iter++;
+        TempRow.addView(TempCheckBox);
+        ST_SettingsTable.addView(TempRow);
+        //----- Sync every at local time
+        InsertCaptionButtonsRow(ST_SettingsTable, Captions);
+        TempRow = new TableRow(MainContext);
+        AddDisabledButtonView(TempRow, Legends[Iter]);
+        TempButton = new Button(MainContext);
+        TempButton.setText(StringsToTimeDisplay(
+                TempCursor.getString(TempCursor.getColumnIndex("Setting018")),
+                TempCursor.getString(TempCursor.getColumnIndex("Setting019"))));
+        new SetTimeWithDBLink(TempButton, MainContext, Database, "Settings", "Key", Key.toString(),
+                "Setting018", "Setting019");
+        Iter++;
+        TempRow.addView(TempButton);
+        ST_SettingsTable.addView(TempRow);
+        //----- End captions
+        InsertCaptionButtonsRow(ST_SettingsTable, Captions);
     }
-    /*----- General Functions -----*/
+    private void MV_Settings_ResetView () {
+        PopulateSettingsTable();
+    }
 }

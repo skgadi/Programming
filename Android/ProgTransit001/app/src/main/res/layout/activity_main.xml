@@ -198,6 +198,7 @@
 
                             <TableLayout
                                 android:id="@+id/SV_StatesTable"
+                                android:background="@drawable/custom_border"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent">
 
@@ -216,7 +217,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:visibility="visible">
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -274,6 +275,7 @@
 
                         <TableLayout
                             android:id="@+id/EV_EventsTable"
+                            android:background="@drawable/custom_border"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent">
 
@@ -290,12 +292,12 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:visibility="gone"
+            android:visibility="visible"
             android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
                 <Button
@@ -320,7 +322,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:onClick="LinkToStates"
-                    android:text="@string/LinkText_GotoStates" />
+                    android:text="@string/LinkText_GotoStates"
+                    tools:ignore="ButtonStyle" />
 
                 <Button
                     android:id="@+id/ST_LinkToEvents"
@@ -335,17 +338,23 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-                <HorizontalScrollView
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:descendantFocusability="beforeDescendants"
+                    android:focusableInTouchMode="true"
+                    android:orientation="vertical">
 
-                    <LinearLayout
+                    <TableLayout
+                        android:id="@+id/ST_SettingsTable"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:descendantFocusability="beforeDescendants"
-                        android:focusableInTouchMode="true"
-                        android:orientation="vertical" />
-                </HorizontalScrollView>
+                        android:background="@drawable/custom_border"
+                        android:layout_weight="4"
+                        android:layout_gravity="center_horizontal">
+
+                    </TableLayout>
+                </LinearLayout>
             </ScrollView>
 
         </LinearLayout>
