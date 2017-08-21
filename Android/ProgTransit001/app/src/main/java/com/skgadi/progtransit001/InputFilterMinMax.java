@@ -39,7 +39,7 @@ public class InputFilterMinMax implements InputFilter {
         } catch (NumberFormatException nfe) {
             nfe.printStackTrace();
         }
-        Toast.makeText(ctx, ctx.getResources().getString(R.string.error_NumberNotInRange) +
+        Toast.makeText(ctx,  ctx.getResources().getStringArray(R.array.Toasts)[2] +
                 " ("+min+", "+max +")." , Toast.LENGTH_SHORT).show();
         return "";
     }

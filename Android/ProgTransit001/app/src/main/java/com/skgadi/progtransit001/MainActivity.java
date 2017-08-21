@@ -8,15 +8,19 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -35,7 +39,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     //Defined By SKGadi
-    enum GLOBAL_DEVICE_STATE {
+    private  enum GLOBAL_DEVICE_STATE {
+        NONE,
         DATABASES,
         STATES,
         EVENTS,
@@ -52,18 +57,43 @@ public class MainActivity extends AppCompatActivity {
             {0, 2550}, {0, 2550}, {0, 255}, {0, 2550}, {0, 2550}, {0, 2550}, {0, 2550}, {0, 255},
             {0, 90000}, {0, 1}, {0, 23}, {0, 59}
     };
+    byte[] Code;
+    String BaseTitle;
+    String[] Toasts;
+    String[] Logs;
+    String[] Titles;
+    String SelectedDatabase;
+    //private LinearLayout MV_Loading;
     private LinearLayout MV_Databases;
     private LinearLayout MV_States;
     private LinearLayout MV_Events;
     private LinearLayout MV_Settings;
+    private LinearLayout MV_Program;
     private Context MainContext;
     SQLiteDatabase Database;
+    private GLOBAL_DEVICE_STATE PreviousView;
+    Integer BackHitsToExit=0;
+    boolean EnableBackButton;
+    @Override
+    public void onBackPressed() {
+        if (EnableBackButton) {
+            if (((PreviousView == GLOBAL_DEVICE_STATE.NONE) && (BackHitsToExit > 0))
+                    || (PreviousView != GLOBAL_DEVICE_STATE.NONE)) {
+                BackHitsToExit = 0;
+                GLOBAL_SetViewState(PreviousView);
+            } else {
+                Toast.makeText(MainContext, Toasts[3], Toast.LENGTH_SHORT).show();
+                BackHitsToExit++;
+            }
+        }
+    }
 
 
     private RadioGroup FL_ProfilesList;
     private Button FL_ProfileSelectedBtn;
     private EditText FL_NewProfileEdtBox;
     private Button FL_DeleteProfileBtn;
+    private Button FL_ShareDatabase;
 
     Spinner SV_CycleSelect;
     TableLayout SV_StatesTable;
@@ -75,22 +105,42 @@ public class MainActivity extends AppCompatActivity {
 
     TableLayout ST_SettingsTable;
 
+    EditText PR_Delay;
+    Button PR_LinkToSettings;
+    Button PR_LinkToDatabses;
+    Button PR_LinkToStates;
+    Button PR_LinkToEvents;
+    Button PR_Connect;
+    Button PR_Disconnect;
+    Button PR_Program;
+    TextView PR_Log;
+    TableLayout PR_DelayTable;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //Added by SKGadi ---- Initialization
+        //----- Initialization
         MainContext = this;
-
+        BaseTitle = getResources().getString(R.string.app_name);
+        Titles = getResources().getStringArray(R.array.Titles);
+        Toasts = getResources().getStringArray(R.array.Toasts);
+        Logs = getResources().getStringArray(R.array.Logs);
+        EnableBackButton = true;
+        //MV_Loading = (LinearLayout) findViewById(R.id.MV_Loading);
         MV_Databases = (LinearLayout) findViewById(R.id.MV_Databases);
         MV_States = (LinearLayout) findViewById(R.id.MV_States);
         MV_Events = (LinearLayout) findViewById(R.id.MV_Events);
         MV_Settings = (LinearLayout) findViewById(R.id.MV_Settings);
+        MV_Program = (LinearLayout) findViewById(R.id.MV_Program);
+
         FL_ProfilesList = (RadioGroup) findViewById(R.id.FL_ProfilesList);
         FL_ProfileSelectedBtn = (Button) findViewById(R.id.FL_ProfileSelectedBtn);
         FL_NewProfileEdtBox = (EditText) findViewById(R.id.FL_NewProfileEdtBox);
         FL_DeleteProfileBtn =  (Button) findViewById(R.id.FL_DeleteProfileBtn);
+        FL_ShareDatabase = (Button) findViewById(R.id.FL_ShareDatabase);
+
 
         SV_CycleSelect = (Spinner) findViewById(R.id.SV_CycleSelect);
         SV_CycleSelect.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -109,8 +159,18 @@ public class MainActivity extends AppCompatActivity {
 
         ST_SettingsTable = (TableLayout) findViewById(R.id.ST_SettingsTable);
 
+        PR_LinkToSettings = (Button) findViewById(R.id.PR_LinkToSettings);
+        PR_LinkToDatabses = (Button) findViewById(R.id.PR_LinkToDatabses);
+        PR_LinkToStates = (Button) findViewById(R.id.PR_LinkToStates);
+        PR_LinkToEvents = (Button) findViewById(R.id.PR_LinkToEvents);
+        PR_Connect = (Button) findViewById(R.id.PR_Connect);
+        PR_Disconnect = (Button) findViewById(R.id.PR_Disconnect);
+        PR_Program = (Button) findViewById(R.id.PR_Program);
+        PR_Log = (TextView) findViewById(R.id.PR_Log);
+        PR_DelayTable = (TableLayout) findViewById(R.id.PR_DelayTable);
+
         GLOBAL_SetViewState(GLOBAL_DEVICE_STATE.DATABASES);
-        ListAllFilesList();
+        ListAllDatabases();
     }
     /*----- Common functions -----*/
     private void GLOBAL_SetViewState (GLOBAL_DEVICE_STATE state) {
@@ -118,22 +178,35 @@ public class MainActivity extends AppCompatActivity {
         MV_States.setVisibility(View.GONE);
         MV_Events.setVisibility(View.GONE);
         MV_Settings.setVisibility(View.GONE);
+        MV_Program.setVisibility(View.GONE);
         switch (state) {
+            case NONE:
+                finish();
+                return;
             case DATABASES:
+                PreviousView = GLOBAL_DEVICE_STATE.NONE;
                 MV_Databases_ResetView ();
                 MV_Databases.setVisibility(View.VISIBLE);
                 return;
             case STATES:
+                PreviousView = GLOBAL_DEVICE_STATE.DATABASES;
                 MV_States_ResetView ();
                 MV_States.setVisibility(View.VISIBLE);
                 return;
             case EVENTS:
-                MV_Eents_ResetView();
+                PreviousView = GLOBAL_DEVICE_STATE.STATES;
+                MV_Events_ResetView();
                 MV_Events.setVisibility(View.VISIBLE);
                 return;
             case SETTINGS:
+                PreviousView = GLOBAL_DEVICE_STATE.EVENTS;
                 MV_Settings_ResetView();
                 MV_Settings.setVisibility(View.VISIBLE);
+                return;
+            case PROGRAM:
+                PreviousView = GLOBAL_DEVICE_STATE.EVENTS;
+                MV_Program_ResetView();
+                MV_Program.setVisibility(View.VISIBLE);
                 return;
             default:
                 return;
@@ -197,19 +270,24 @@ public class MainActivity extends AppCompatActivity {
     public void LinkToSettings (View v) {
         GLOBAL_SetViewState(GLOBAL_DEVICE_STATE.SETTINGS);
     }
-    public void LinkToProgrammingWind (View v) {
-        GLOBAL_SetViewState(GLOBAL_DEVICE_STATE.SETTINGS);
+    public void LinkToProgramming (View v) {
+        GLOBAL_SetViewState(GLOBAL_DEVICE_STATE.PROGRAM);
     }
 
     /*----- MV_Databases Functions -----*/
     private void MV_Databases_ResetView () {
-        FL_ProfileSelectedBtn.setEnabled(false);
-        FL_DeleteProfileBtn.setEnabled(false);
+        setEnabledDBLinkedButtons(false);
         FL_ProfilesList.clearCheck();
     }
-    private void ListAllFilesList () {
-        FL_DeleteProfileBtn.setEnabled(false);
-        FL_ProfileSelectedBtn.setEnabled(false);
+    private void setEnabledDBLinkedButtons (boolean set) {
+        getSupportActionBar().setTitle(BaseTitle + " :: " + Titles[0] + " :: " + SelectedDatabase);
+        FL_ProfileSelectedBtn.setEnabled(set);
+        FL_DeleteProfileBtn.setEnabled(set);
+        FL_ShareDatabase.setEnabled(set);
+    }
+    private void ListAllDatabases() {
+        SelectedDatabase = "";
+        MV_Databases_ResetView();
         FL_ProfilesList.removeAllViews();
         RadioButton RadioItem;
         String Databases[] = MainContext.databaseList();
@@ -223,8 +301,9 @@ public class MainActivity extends AppCompatActivity {
                     RadioItem.setText(matcher.group(1));
                     RadioItem.setOnClickListener(new View.OnClickListener() {
                         public void onClick(View v) {
-                            FL_ProfileSelectedBtn.setEnabled(true);
-                            FL_DeleteProfileBtn.setEnabled(true);
+                            SelectedDatabase =
+                                    ((RadioButton) findViewById(FL_ProfilesList.getCheckedRadioButtonId())).getText().toString();
+                            setEnabledDBLinkedButtons(true);
                         }
                     });
                     FL_ProfilesList.addView(RadioItem);
@@ -234,15 +313,19 @@ public class MainActivity extends AppCompatActivity {
     }
     public void FL_OC_AddNewProfile (View v) {
         String DatabaseName = FL_NewProfileEdtBox.getText().toString();
-        if (doesDatabaseExist(MainContext,"GSK_"+DatabaseName))
-            Toast.makeText(MainContext, getResources().getString(R.string.error_DatabaseAlreadyExist), Toast.LENGTH_SHORT).show();
-        else{
-            SQLiteDatabase NewDatabase = MainContext.openOrCreateDatabase("GSK_" + DatabaseName, MODE_PRIVATE, null);
-            CreateTables(NewDatabase);
-            PopulateEssentialTables(NewDatabase);
-            NewDatabase.close();
+        if (DatabaseName.isEmpty())
+            Toast.makeText(MainContext, Toasts[4], Toast.LENGTH_SHORT).show();
+        else {
+            if (doesDatabaseExist(MainContext, "GSK_" + DatabaseName))
+                Toast.makeText(MainContext, Toasts[0], Toast.LENGTH_SHORT).show();
+            else {
+                SQLiteDatabase NewDatabase = MainContext.openOrCreateDatabase("GSK_" + DatabaseName, MODE_PRIVATE, null);
+                CreateTables(NewDatabase);
+                PopulateEssentialTables(NewDatabase);
+                NewDatabase.close();
+                ListAllDatabases();
+            }
         }
-        ListAllFilesList();
     }
     private void CreateTables (SQLiteDatabase NewDatabase) {
         NewDatabase.execSQL("CREATE TABLE IF NOT EXISTS `States` (" +
@@ -335,10 +418,10 @@ public class MainActivity extends AppCompatActivity {
         String DatabaseToDelete = "GSK_" +
                 ((RadioButton) findViewById(FL_ProfilesList.getCheckedRadioButtonId())).getText().toString();
         MainContext.deleteDatabase(DatabaseToDelete);
-        ListAllFilesList();
+        ListAllDatabases();
     }
     public void FL_OC_RefreshList (View v) {
-        ListAllFilesList ();
+        ListAllDatabases();
     }
     public void FL_OC_ProfileSelected (View v) {
         String DatabaseName = "GSK_" +
@@ -346,8 +429,11 @@ public class MainActivity extends AppCompatActivity {
         Database = MainContext.openOrCreateDatabase(DatabaseName, MODE_PRIVATE, null);
         GLOBAL_SetViewState(GLOBAL_DEVICE_STATE.STATES);
     }
+    public void FL_ShareProfile (View v) {
+    }
     /*----- MV_States Functions -----*/
     private void MV_States_ResetView () {
+        getSupportActionBar().setTitle(BaseTitle + " :: " + Titles[1] + " :: " + SelectedDatabase);
         SV_CycleSelect.setSelection(0);
         SyncStatesViewWithCycleType();
     }
@@ -372,6 +458,8 @@ public class MainActivity extends AppCompatActivity {
                 TempRow = new TableRow(this);
                 //----- Key
                 String KeyVal= TempCursor.getString(TempCursor.getColumnIndex("Key"));
+                //----- State Num
+                AddDisabledButtonView(TempRow, String.format("%02d", Iter+1));
                 //----- Period
                 TempStr = TempCursor.getString(TempCursor.getColumnIndex("Period"));
                 EditText Temp_Period = new EditText(MainContext);
@@ -423,11 +511,17 @@ public class MainActivity extends AppCompatActivity {
                     ", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);");
             SyncStatesViewWithCycleType();
         } else {
-            Toast.makeText(MainContext,getResources().getString(
-                    R.string.Error_ReachedStatesLimit), Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainContext,Toasts[1], Toast.LENGTH_SHORT).show();
         }
     }
+    public void SV_RefreshStatesList (View v) {
+        SyncStatesViewWithCycleType();
+    }
     /*----- MV_Events Functions -----*/
+    private void MV_Events_ResetView() {
+        getSupportActionBar().setTitle(BaseTitle + " :: " + Titles[2] + " :: " + SelectedDatabase);
+        PopulateEventsTable();
+    }
     private void PopulateEventsTable() {
         String[] Captions = getResources().getStringArray(R.array.EventsTableCaptions);
         TableRow TempRow;
@@ -450,7 +544,7 @@ public class MainActivity extends AppCompatActivity {
                 TempRow = new TableRow(MainContext);
                 //----- Even ID
                 EventID = TempCursor.getString(TempCursor.getColumnIndex("EventID"));
-                AddDisabledButtonView(TempRow, String.format("%02d", Integer.parseInt(EventID)));
+                AddDisabledButtonView(TempRow, String.format("%02d", Integer.parseInt(EventID)+1));
                 //----- Cycle Type
                 TempSpinner = new Spinner(MainContext);
                 ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
@@ -500,10 +594,11 @@ public class MainActivity extends AppCompatActivity {
             InsertCaptionButtonsRow(EV_EventsTable, Captions);
         }
     }
-    private void MV_Eents_ResetView () {
-        PopulateEventsTable();
-    }
     /*----- MV_Settings Functions -----*/
+    private void MV_Settings_ResetView () {
+        getSupportActionBar().setTitle(BaseTitle + " :: " + Titles[3] + " :: " + SelectedDatabase);
+        PopulateSettingsTable();
+    }
     private void PopulateSettingsTable (){
         String[] Captions = getResources().getStringArray(R.array.SettingsCaptions);
         String[] Legends = getResources().getStringArray(R.array.SettingsLegends);
@@ -517,9 +612,9 @@ public class MainActivity extends AppCompatActivity {
         Integer Iter=0;
         ST_SettingsTable.removeAllViews();
         Cursor TempCursor = null;
-        TempCursor = Database.rawQuery("SELECT * FROM `Settings`;", null);
+        TempCursor = Database.rawQuery("SELECT * FROM `Settings` WHERE `Key` == 1;", null);
         TempCursor.moveToFirst();
-        Key = TempCursor.getInt(TempCursor.getColumnIndex("Key"));
+        Key = 1;//TempCursor.getInt(TempCursor.getColumnIndex("Key"));
 
         InsertCaptionButtonsRow(ST_SettingsTable, Captions);
         //----- Timezone sign
@@ -615,13 +710,114 @@ public class MainActivity extends AppCompatActivity {
                 TempCursor.getString(TempCursor.getColumnIndex("Setting019"))));
         new SetTimeWithDBLink(TempButton, MainContext, Database, "Settings", "Key", Key.toString(),
                 "Setting018", "Setting019");
-        Iter++;
+        //Iter++;
         TempRow.addView(TempButton);
         ST_SettingsTable.addView(TempRow);
         //----- End captions
         InsertCaptionButtonsRow(ST_SettingsTable, Captions);
     }
-    private void MV_Settings_ResetView () {
-        PopulateSettingsTable();
+    /*----- MV_Program Functions -----*/
+    private void MV_Program_ResetView() {
+        getSupportActionBar().setTitle(BaseTitle + " :: " + Titles[4] + " :: " + SelectedDatabase);
+        setViewToConnect(false);
+        //----- Delay setting update option
+        PR_DelayTable.removeAllViews();
+        PR_Delay = new EditText(MainContext);
+        Cursor TempCursor = null;
+        TempCursor = Database.rawQuery("SELECT * FROM `Settings` WHERE `Key` == 1;", null);
+        TempCursor.moveToFirst();
+        PR_Delay.setText(TempCursor.getString(TempCursor.getColumnIndex("Setting007")));
+        TempCursor.close();
+        PR_Delay.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
+        PR_Delay.setFilters(new InputFilter[]{new InputFilterMinMax(
+                MainContext, SettingsLimits[7][0], SettingsLimits[7][1]
+        )});
+        PR_Delay.addTextChangedListener(new TextChangeUpdateDatabase(
+                Database, "Settings", "Key", "1", "Setting007"));
+        PR_Delay.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        PR_DelayTable.addView(PR_Delay);
+    }
+    private void setViewToConnect(boolean set) {
+        EnableBackButton = !set;
+        PR_LinkToSettings.setEnabled(!set);
+        PR_LinkToDatabses.setEnabled(!set);
+        PR_LinkToStates.setEnabled(!set);
+        PR_LinkToEvents.setEnabled(!set);
+        PR_DelayTable.setEnabled(!set);
+        PR_Connect.setEnabled(!set);
+        PR_Disconnect.setEnabled(set);
+        PR_Program.setEnabled(set);
+    }
+    private void GenerateCodeFromDatabase () {
+        Code = new byte[1024];
+        byte[] TempIntArr;
+        Integer TempInt;
+        Cursor TempCursor = null;
+        TempCursor = Database.rawQuery("SELECT * FROM `Settings` WHERE `Key` == 1;", null);
+        TempCursor.moveToFirst();
+        //----- TimeZone
+        TempInt = 60* GetIntFromCursor(TempCursor, "Setting001") +
+                GetIntFromCursor(TempCursor, "Setting002");
+        if (GetIntFromCursor(TempCursor, "Setting000")==0) {
+            TempInt = -1*TempInt;
+        }
+        TempIntArr = SplitIntToByteArray(TempInt, 2);
+        Code[0] = TempIntArr[0];
+        Code[1] = TempIntArr[1];
+        //----- Remaining settings
+        Integer Iter=0;
+        Integer[] TempSizeOfVars = {1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1};
+        Integer[] TempDevideVar =  {1, 1, 1, 1, 1, 10, 10, 1, 10, 10, 10, 10, 1, 1, 1, 1, 1};
+        for (int i=0; i<TempSizeOfVars.length; i++) {
+            TempInt = GetIntFromCursor(TempCursor, "Setting"+String.format("%03d", i+3));
+            TempIntArr = SplitIntToByteArray(TempInt/TempDevideVar[i], TempSizeOfVars[i]);
+            for (int j=0; j< TempSizeOfVars[i]; j++) {
+                Code[2 + Iter] = TempIntArr[j];
+                Iter++;
+            }
+        }
+    }
+    private int GetIntFromCursor (Cursor Cursor, String Column) {
+        return Cursor.getInt(Cursor.getColumnIndex(Column));
+    }
+    private byte[] SplitIntToByteArray (Integer inInteger, Integer size) {
+        byte[] OutBytes = new byte[size];
+        for (int i=0; i<OutBytes.length; i++) {
+            OutBytes[i] = (byte) ((inInteger>>(8*i) & (0xff)));
+        }
+        return OutBytes;
+    }
+    private void PrintCodeToLog () {
+        for (int i=0; i<(Code.length+1)/16; i++) {
+            PR_Log.setText(PR_Log.getText() + String.format("0x%1$03X:\t",i*16));
+            for (int j=0; j<16; j++) {
+                PR_Log.setText(PR_Log.getText() + String.format("\t0x%1$02X", Code[i * 16 + j]));
+                if ((j+1)%4 ==0) PR_Log.setText(PR_Log.getText() + "\t");
+                if ((j+1)%8 ==0) PR_Log.setText(PR_Log.getText() + "\t");
+            }
+            PR_Log.setText(PR_Log.getText() + "\n");
+        }
+    }
+    public void onConnectClick (View v) {
+        PR_Log.setText("");
+        GenerateCodeFromDatabase();
+        PrintCodeToLog();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
