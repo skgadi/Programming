@@ -61,13 +61,13 @@
         <item>Cycle type</item>
         <item>Start time</item>
         <item>End time</item>
+        <item>Sunday</item>
         <item>Monday</item>
         <item>Tuesday</item>
         <item>Wednesday</item>
         <item>Thursday</item>
         <item>Friday</item>
         <item>Saturday</item>
-        <item>Sunday</item>
     </string-array>
     <string-array name="MonthsArray">
         <item>January</item>
@@ -97,8 +97,8 @@
         <item>Special audio on time</item>
         <item>Special audio off time</item>
         <item>Special audio for last x seconds</item>
-        <item>GPS-time sync every x seconds</item>
         <item>GPS-time sync at start</item>
+        <item>GPS-time sync every x seconds</item>
         <item>GPS-time sync every day at</item>
     </string-array>
     <string-array name="SettingsCaptions">

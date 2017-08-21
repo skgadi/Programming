@@ -8,10 +8,9 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
-import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +19,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -31,6 +29,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.util.Calendar;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,15 +47,16 @@ public class MainActivity extends AppCompatActivity {
         SETTINGS,
         PROGRAM
     }
-    int EVENTS_COUNT = 12;
-    int TOTAL_STATES_COUNT = 160;
+    int EVENTS_COUNT = 24;
+    int STATES_COUNT = 160;
+    int CYCLE_TYPES_COUNT = 17;
     Integer[] SettingsDefault = {
-            -1, 6, 30, 1, 4, 1, 10, -10, 600, 400, 4, 80, 1920, 80, 420, 5, 90000, 1, 5, 0
+            0, 6, 30, 1, 4, 1, 10, -10, 600, 400, 4, 80, 1920, 80, 420, 5, 1, 90000, 5, 0
     };
     Integer[][] SettingsLimits = {
             {-1, 1}, {0, 23}, {0, 59}, {1, 31}, {1, 12}, {1, 31}, {1, 12}, {-32767, 32767},
             {0, 2550}, {0, 2550}, {0, 255}, {0, 2550}, {0, 2550}, {0, 2550}, {0, 2550}, {0, 255},
-            {0, 90000}, {0, 1}, {0, 23}, {0, 59}
+            {0, 1}, {0, 90000}, {0, 23}, {0, 59}
     };
     byte[] Code;
     String BaseTitle;
@@ -394,10 +395,10 @@ public class MainActivity extends AppCompatActivity {
             data = new ContentValues();
             data.put("EventID", i);
             data.put("CycleType",0);
-            data.put("StartTimeHour",0);
-            data.put("StartTimeMin",0);
-            data.put("EndTimeHour",0);
-            data.put("EndTimeMin",0);
+            data.put("StartTimeHour",-1);
+            data.put("StartTimeMin",-1);
+            data.put("EndTimeHour",-1);
+            data.put("EndTimeMin",-1);
             data.put("Day0", 0);
             data.put("Day1", 0);
             data.put("Day2", 0);
@@ -472,7 +473,9 @@ public class MainActivity extends AppCompatActivity {
                 for (int i=0; i<StatesDBPins.length; i++) {
                     Spinner TempSpinner = new Spinner(MainContext);
                     SimpleImageArrayAdapter adapter = new SimpleImageArrayAdapter(MainContext,
-                            new Integer[]{R.drawable.spinner_pattern_off, R.drawable.spinner_pattern_on, R.drawable.spinner_pattern_on_blink});
+                            new Integer[]{R.drawable.spinner_pattern_off,
+                                    R.drawable.spinner_pattern_on,
+                                    R.drawable.spinner_pattern_on_blink});
                     TempSpinner.setAdapter(adapter);
                     TempSpinner.setMinimumHeight(50);
                     TempSpinner.setMinimumWidth(100);
@@ -504,7 +507,7 @@ public class MainActivity extends AppCompatActivity {
     public void AppendAStateRecord (View v) {
         Cursor TempCursor = null;
         TempCursor = Database.rawQuery("SELECT * FROM `States`;", null);
-        if (TempCursor.getCount() <= TOTAL_STATES_COUNT) {
+        if (TempCursor.getCount() <= STATES_COUNT) {
             Database.execSQL("INSERT INTO `States` (`CycleType`, `Period`, `D00`, `D01`, `D02`," +
                     " `D03`, `D04`, `D05`, `D06`, `D07`, `D08`, `D09`, `D10`, `D11`, `Audio`)" +
                     " VALUES (" + SV_CycleSelect.getSelectedItemPosition() +
@@ -670,7 +673,7 @@ public class MainActivity extends AppCompatActivity {
         TempRow.addView(TempButton);
         ST_SettingsTable.addView(TempRow);
         //----- EditNumbers
-        for (int i=0; i<10; i++) {
+        for (int i=0; i<9; i++) {
             if (Iter%5 == 0)
                 InsertCaptionButtonsRow(ST_SettingsTable, Captions);
             TempRow = new TableRow(MainContext);
@@ -693,12 +696,26 @@ public class MainActivity extends AppCompatActivity {
         TempCheckBox = new CheckBox(MainContext);
         TempCheckBox.setMinimumWidth(100);
         TempCheckBox.setChecked(false);
-        if (TempCursor.getInt(TempCursor.getColumnIndex("Setting017"))==1)
+        if (TempCursor.getInt(TempCursor.getColumnIndex("Setting016"))==1)
             TempCheckBox.setChecked(true);
         TempCheckBox.setOnCheckedChangeListener(new CheckboxDBLink(
-                Database, "Settings", "Key", Key.toString(), "Setting017"));
+                Database, "Settings", "Key", Key.toString(), "Setting016"));
         Iter++;
         TempRow.addView(TempCheckBox);
+        ST_SettingsTable.addView(TempRow);
+        //----- GPS_SYNC_EVERY_x_SECONDS
+        TempRow = new TableRow(MainContext);
+        AddDisabledButtonView(TempRow, Legends[Iter]);
+        TempEditText = new EditText(MainContext);
+        TempEditText.setText(TempCursor.getString(TempCursor.getColumnIndex("Setting017")));
+        TempEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
+        TempEditText.setFilters(new InputFilter[]{new InputFilterMinMax(
+                MainContext, SettingsLimits[17][0], SettingsLimits[17][1]
+        )});
+        TempEditText.addTextChangedListener(new TextChangeUpdateDatabase(
+                Database, "Settings", "Key", Key.toString(), "Setting017"));
+        Iter++;
+        TempRow.addView(TempEditText);
         ST_SettingsTable.addView(TempRow);
         //----- Sync every at local time
         InsertCaptionButtonsRow(ST_SettingsTable, Captions);
@@ -754,6 +771,10 @@ public class MainActivity extends AppCompatActivity {
         Code = new byte[1024];
         byte[] TempIntArr;
         Integer TempInt;
+        Integer Pointer00=0;
+        Integer Pointer01;
+        Integer[] TempSizeOfVars = {1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1};
+        Integer[] TempDevideVar =  {1, 1, 1, 1, 1, 10, 10, 1, 10, 10, 10, 10, 1, 1, 1, 1, 1};
         Cursor TempCursor = null;
         TempCursor = Database.rawQuery("SELECT * FROM `Settings` WHERE `Key` == 1;", null);
         TempCursor.moveToFirst();
@@ -764,20 +785,84 @@ public class MainActivity extends AppCompatActivity {
             TempInt = -1*TempInt;
         }
         TempIntArr = SplitIntToByteArray(TempInt, 2);
-        Code[0] = TempIntArr[0];
-        Code[1] = TempIntArr[1];
-        //----- Remaining settings
-        Integer Iter=0;
-        Integer[] TempSizeOfVars = {1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1};
-        Integer[] TempDevideVar =  {1, 1, 1, 1, 1, 10, 10, 1, 10, 10, 10, 10, 1, 1, 1, 1, 1};
-        for (int i=0; i<TempSizeOfVars.length; i++) {
+        Code[Pointer00++] = TempIntArr[0];
+        Code[Pointer00++] = TempIntArr[1];
+        //----- DayLightStart and DayLightEnd
+        for (int i=0; i<4; i++) {
             TempInt = GetIntFromCursor(TempCursor, "Setting"+String.format("%03d", i+3));
             TempIntArr = SplitIntToByteArray(TempInt/TempDevideVar[i], TempSizeOfVars[i]);
             for (int j=0; j< TempSizeOfVars[i]; j++) {
-                Code[2 + Iter] = TempIntArr[j];
-                Iter++;
+                Code[Pointer00++] = TempIntArr[j];
             }
         }
+        //----- Century
+        TempInt = Calendar.getInstance().get(Calendar.YEAR);
+        Code[Pointer00++] = (byte)(TempInt/100);
+        //----- CycleDelay, BlinkTimings, etc.
+        for (int i=4; i<15; i++) {
+            TempInt = GetIntFromCursor(TempCursor, "Setting"+String.format("%03d", i+3));
+            TempIntArr = SplitIntToByteArray(TempInt/TempDevideVar[i], TempSizeOfVars[i]);
+            for (int j=0; j< TempSizeOfVars[i]; j++) {
+                Code[Pointer00++] = TempIntArr[j];
+            }
+        }
+        //----- GPS_SYNC_EVERY_DAY_AT_LOCAL_TIME
+        Code[Pointer00++] = (byte) GetIntFromCursor(TempCursor, "Setting019");
+        Code[Pointer00++] = (byte) GetIntFromCursor(TempCursor, "Setting018");
+        //Log.d("I", Pointer00.toString());
+        //----- STATES DATABASE
+        Pointer00 = 23;
+        TempCursor.close();
+        Pointer01 = 0;
+        for (int i = 0; i< CYCLE_TYPES_COUNT; i++) {
+            TempCursor = Database.rawQuery("SELECT * FROM `States` WHERE `CycleType` == " +
+                    i + ";", null);
+            TempCursor.moveToFirst();
+            for (int j=0; j<TempCursor.getCount(); j++) {
+                TempInt = GetIntFromCursor(TempCursor, "Audio");
+                //----- AUDIO NORMAL
+                if (TempInt == 1) Code[Pointer00 + (Pointer01/8)] = (byte)
+                            (Code[Pointer00 + (Pointer01/8)] | (1 << (Pointer01 % 8)));
+                //----- AUDIO SPECIAL
+                if (TempInt == 2) Code[Pointer00 + (Pointer01/8) + 20] = (byte)
+                            (Code[Pointer00 + (Pointer01/8) + 20] | (1 << (Pointer01 % 8)));
+                //----- STATES
+                TempInt = GetIntFromCursor(TempCursor, "Period");
+                Code[Pointer00+Pointer01*5+201] = TempInt.byteValue();
+                for (int k=0; k<2; k++) {
+                    for (int l=0; l<6; l++) {
+                        TempInt = GetIntFromCursor(TempCursor, "D"+String.format("%02d", (k*6+l)));
+                        if (TempInt == 1) Code[Pointer00+Pointer01*5+k+202] = (byte)
+                                (Code[Pointer00+Pointer01*5+k+202] | (1<<(l%8)));
+                        if (TempInt == 2) Code[Pointer00+Pointer01*5+k+204] = (byte)
+                                (Code[Pointer00+Pointer01*5+k+204] | (1<<(l%8)));
+                    }
+                }
+                Pointer01++;
+                TempCursor.moveToNext();
+            }
+            //----- CYCLE_TYPES
+            if (i==0) Code[Pointer00 + i + 40] = (byte) (TempCursor.getCount() - 1);
+            else  Code[Pointer00+i+40] = (byte) (Code[Pointer00+i+40-1] + TempCursor.getCount());
+            TempCursor.close();
+        }
+        //----- EVENTS DATABASE
+        Pointer00 = 80;
+        TempCursor = Database.rawQuery("SELECT * FROM `Events`;", null);
+        TempCursor.moveToFirst();
+        for (int i=0; i<EVENTS_COUNT; i++) {
+            Code[Pointer00+i*6+0] = (byte) GetIntFromCursor(TempCursor, "StartTimeMin");
+            Code[Pointer00+i*6+1] = (byte) GetIntFromCursor(TempCursor, "StartTimeHour");
+            Code[Pointer00+i*6+2] = (byte) GetIntFromCursor(TempCursor, "EndTimeMin");
+            Code[Pointer00+i*6+3] = (byte) GetIntFromCursor(TempCursor, "EndTimeHour");
+            Code[Pointer00+i*6+4] = (byte) GetIntFromCursor(TempCursor, "CycleType");
+            for (int j=0; j<7; j++) {
+                TempInt = GetIntFromCursor(TempCursor, "Day"+j);
+                Code[Pointer00+i*6+5] = (byte)(Code[Pointer00+i*6+5] | (1<<(7-TempInt)));
+            }
+            TempCursor.moveToNext();
+        }
+        TempCursor.close();
     }
     private int GetIntFromCursor (Cursor Cursor, String Column) {
         return Cursor.getInt(Cursor.getColumnIndex(Column));
@@ -789,8 +874,18 @@ public class MainActivity extends AppCompatActivity {
         }
         return OutBytes;
     }
+    private void PrintHorizontalAddress () {
+        PR_Log.setText(PR_Log.getText() + "\n\t\t\t\t");
+        for (int i=0; i<16; i++) {
+            PR_Log.setText(PR_Log.getText() + String.format("0x%1$02X\t",i));
+            if ((i+1)%4 ==0) PR_Log.setText(PR_Log.getText() + "\t");
+            if ((i+1)%8 ==0) PR_Log.setText(PR_Log.getText() + "\t");
+        }
+        PR_Log.setText(PR_Log.getText() + "\n\n");
+    }
     private void PrintCodeToLog () {
         for (int i=0; i<(Code.length+1)/16; i++) {
+            if(i%5==0) PrintHorizontalAddress();
             PR_Log.setText(PR_Log.getText() + String.format("0x%1$03X:\t",i*16));
             for (int j=0; j<16; j++) {
                 PR_Log.setText(PR_Log.getText() + String.format("\t0x%1$02X", Code[i * 16 + j]));
