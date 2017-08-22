@@ -133,4 +133,15 @@
         <item>Device disconnected</item>
         <item>Programming started</item>
     </string-array>
+<!--Taken from another program-->
+    <string name="device_connected">Connected (Tap to disconnect)</string>
+    <string name="device_disconnected">Disconnected (Tap to connect)</string>
+    <string name="device_program">Program and verify</string>
+    <string name="device_verify">Verify</string>
+    <string name="error_device_not_connected">Device is not pluged to the tablet</string>
+    <string name="error_device_unable_to_connect">Couldn\'t able to establish a connection. Try again with proper permissions.</string>
+    <string name="error_device_open_port">Unable to open the port. Detach, re-attach the device to fix the problem.</string>
+    <string name="error_device_disconnect">Unknown error. Detach, re-attach the device to fix the problem.</string>
+    <string name="success_device_connected">Device is successfully connected.</string>
+    <string name="success_device_disconnected">Device is successfully disconnected.</string>
 </resources>

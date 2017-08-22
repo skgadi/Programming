@@ -483,26 +483,22 @@
                     </TableLayout>
                 </LinearLayout>
 
-                <Button
-                    android:id="@+id/PR_Connect"
+                <ToggleButton
+                    android:id="@+id/PR_ToggleConnect"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:onClick="onConnectClick"
-                    android:text="@string/Program_Connect" />
-
-                <Button
-                    android:id="@+id/PR_Disconnect"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/Program_Disconnect" />
+                    android:text="ToggleButton"
+                    android:checked="false"
+                    android:textOff="@string/device_disconnected"
+                    android:textOn="@string/device_connected" />
 
                 <Button
                     android:id="@+id/PR_Program"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:onClick="SendAndVerify"
                     android:text="@string/Program_Program" />
 
             </LinearLayout>
@@ -515,7 +511,7 @@
             </LinearLayout>
 
             <ProgressBar
-                android:id="@+id/progressBar2"
+                android:id="@+id/PR_ProgressBar"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
@@ -533,6 +529,7 @@
                         android:id="@+id/PR_Log"
                         android:layout_width="match_parent"
                         android:textColor="#000000"
+                        android:background="@drawable/custom_border"
                         android:layout_height="wrap_content" />
                 </LinearLayout>
             </ScrollView>

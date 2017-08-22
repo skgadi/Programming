@@ -1,16 +1,20 @@
 package com.skgadi.progtransit001;
 
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,8 +22,10 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
@@ -27,10 +33,18 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
+
+import com.hoho.android.usbserial.driver.CdcAcmSerialDriver;
+import com.hoho.android.usbserial.driver.ProbeTable;
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialPort;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Calendar;
-import java.util.Locale;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -111,11 +125,28 @@ public class MainActivity extends AppCompatActivity {
     Button PR_LinkToDatabses;
     Button PR_LinkToStates;
     Button PR_LinkToEvents;
-    Button PR_Connect;
-    Button PR_Disconnect;
+    //Button PR_Connect;
+    //Button PR_Disconnect;
     Button PR_Program;
     TextView PR_Log;
     TableLayout PR_DelayTable;
+
+    //----- Communication and other from prev program
+    protected UsbManager manager;
+    ProbeTable customTable;
+    UsbSerialProber prober;
+    List<UsbSerialDriver> drivers;
+    UsbSerialDriver driver;
+    UsbDeviceConnection connection;
+    private UsbSerialPort port;
+    private ProgressBar ProgramProgressBar;
+    ToggleButton PR_ToggleConnect;
+    Button ProgramButton;
+    private enum DEVICE_STATE {
+        DISCONNECTED,
+        CONNECTED
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -164,12 +195,37 @@ public class MainActivity extends AppCompatActivity {
         PR_LinkToDatabses = (Button) findViewById(R.id.PR_LinkToDatabses);
         PR_LinkToStates = (Button) findViewById(R.id.PR_LinkToStates);
         PR_LinkToEvents = (Button) findViewById(R.id.PR_LinkToEvents);
-        PR_Connect = (Button) findViewById(R.id.PR_Connect);
-        PR_Disconnect = (Button) findViewById(R.id.PR_Disconnect);
+        //PR_Connect = (Button) findViewById(R.id.PR_Connect);
+        //PR_Disconnect = (Button) findViewById(R.id.PR_Disconnect);
         PR_Program = (Button) findViewById(R.id.PR_Program);
         PR_Log = (TextView) findViewById(R.id.PR_Log);
         PR_DelayTable = (TableLayout) findViewById(R.id.PR_DelayTable);
+        //----- Taken from another program
+        ProgramButton = (Button) findViewById(R.id.PR_Program);
+        PR_ToggleConnect = (ToggleButton) findViewById(R.id.PR_ToggleConnect);
+        ProgramProgressBar = (ProgressBar) findViewById(R.id.PR_ProgressBar);
 
+        customTable = new ProbeTable();
+        customTable.addProduct(0x4D8, 0x000A, CdcAcmSerialDriver.class);
+        prober = new UsbSerialProber(customTable);
+        PR_ToggleConnect.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    int status = ConnectUSB ();
+                    if (status == 2) setViewToConnect(true);
+                    else setViewToConnect(false);
+                } else {
+                    try {
+                        setViewToConnect(false);;
+                        port.close();
+                        Toast.makeText(MainActivity.this, R.string.success_device_disconnected,Toast.LENGTH_SHORT).show();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Toast.makeText(MainActivity.this, R.string.error_device_disconnect,Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        });
         GLOBAL_SetViewState(GLOBAL_DEVICE_STATE.DATABASES);
         ListAllDatabases();
     }
@@ -763,11 +819,14 @@ public class MainActivity extends AppCompatActivity {
         PR_LinkToStates.setEnabled(!set);
         PR_LinkToEvents.setEnabled(!set);
         PR_DelayTable.setEnabled(!set);
-        PR_Connect.setEnabled(!set);
-        PR_Disconnect.setEnabled(set);
+        for (int i = 0; i < PR_DelayTable.getChildCount(); i++) {
+            View child = PR_DelayTable.getChildAt(i);
+            child.setEnabled(!set);
+        }
+        PR_ToggleConnect.setChecked(set);
         PR_Program.setEnabled(set);
     }
-    private void GenerateCodeFromDatabase () {
+    private void GenerateCodeFromDatabase (SQLiteDatabase Database) {
         Code = new byte[1024];
         byte[] TempIntArr;
         Integer TempInt;
@@ -858,7 +917,8 @@ public class MainActivity extends AppCompatActivity {
             Code[Pointer00+i*6+4] = (byte) GetIntFromCursor(TempCursor, "CycleType");
             for (int j=0; j<7; j++) {
                 TempInt = GetIntFromCursor(TempCursor, "Day"+j);
-                Code[Pointer00+i*6+5] = (byte)(Code[Pointer00+i*6+5] | (1<<(7-TempInt)));
+                if (TempInt == 1) Code[Pointer00+i*6+5] = (byte)
+                        (Code[Pointer00+i*6+5] | (0x40>>j));
             }
             TempCursor.moveToNext();
         }
@@ -875,44 +935,180 @@ public class MainActivity extends AppCompatActivity {
         return OutBytes;
     }
     private void PrintHorizontalAddress () {
-        PR_Log.setText(PR_Log.getText() + "\n\t\t\t\t");
+        PR_Log.append("\n\t\t\t\t");
         for (int i=0; i<16; i++) {
-            PR_Log.setText(PR_Log.getText() + String.format("0x%1$02X\t",i));
-            if ((i+1)%4 ==0) PR_Log.setText(PR_Log.getText() + "\t");
-            if ((i+1)%8 ==0) PR_Log.setText(PR_Log.getText() + "\t");
+            PR_Log.append(String.format("0x%1$02X\t",i));
+            if ((i+1)%4 ==0) PR_Log.append("\t");
+            if ((i+1)%8 ==0) PR_Log.append("\t");
         }
-        PR_Log.setText(PR_Log.getText() + "\n\n");
+        PR_Log.append("\n\n");
     }
     private void PrintCodeToLog () {
         for (int i=0; i<(Code.length+1)/16; i++) {
             if(i%5==0) PrintHorizontalAddress();
-            PR_Log.setText(PR_Log.getText() + String.format("0x%1$03X:\t",i*16));
+            PR_Log.append(String.format("0x%1$03X:\t",i*16));
             for (int j=0; j<16; j++) {
-                PR_Log.setText(PR_Log.getText() + String.format("\t0x%1$02X", Code[i * 16 + j]));
-                if ((j+1)%4 ==0) PR_Log.setText(PR_Log.getText() + "\t");
-                if ((j+1)%8 ==0) PR_Log.setText(PR_Log.getText() + "\t");
+                PR_Log.append(String.format("\t0x%1$02X", Code[i * 16 + j]));
+                if ((j+1)%4 ==0) PR_Log.append("\t");
+                if ((j+1)%8 ==0) PR_Log.append("\t");
             }
-            PR_Log.setText(PR_Log.getText() + "\n");
+            PR_Log.append("\n");
         }
     }
     public void onConnectClick (View v) {
         PR_Log.setText("");
-        GenerateCodeFromDatabase();
+        GenerateCodeFromDatabase(Database);
         PrintCodeToLog();
     }
+    /*----- Taken from another program and adapted -----*/
+    private int ConnectUSB () {
+        manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        drivers = prober.findAllDrivers(manager);
+        if (drivers.isEmpty()) {
+            Toast.makeText(MainActivity.this, R.string.error_device_not_connected,Toast.LENGTH_SHORT).show();
+            return 0;
+        }
+        driver = drivers.get(0);
+        connection = manager.openDevice(driver.getDevice());
+        if (connection == null) {
+            // You probably need to call UsbManager.requestPermission(driver.getDevice(), ..)
+            String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
+            PendingIntent mPermissionIntent = PendingIntent.getBroadcast(MainActivity.this, 0, new Intent(ACTION_USB_PERMISSION), 0);
+            manager.requestPermission(driver.getDevice(), mPermissionIntent);
+            Toast.makeText(MainActivity.this, R.string.error_device_unable_to_connect,Toast.LENGTH_SHORT).show();
+            return 1;
+        }
+        port = driver.getPorts().get(0);
+        try {
+            port.open(connection);
+            port.setParameters(9600, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+            Toast.makeText(MainActivity.this, R.string.success_device_connected,Toast.LENGTH_SHORT).show();
+            return 2;
+        } catch (IOException e) {
+            Toast.makeText(MainActivity.this, R.string.error_device_open_port,Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+            return 0;
+        }
+    }
+    private static class ProgramTaskParams {
+        byte[] Code;
+        UsbSerialPort Port;
+        ProgramTaskParams(byte[] Code, UsbSerialPort Port) {
+            this.Code = Code;
+            this.Port = Port;
+        }
+    }
+    public void SendAndVerify (View v) {
+        GenerateCodeFromDatabase(Database);
+        ProgramTaskParams Params = new ProgramTaskParams(Code, port);
+        new ProgramDeviceTask().execute(Params);
+    }
+    private void setProgressPercent(Integer Percent) {
+        ProgramProgressBar.setProgress(Percent);
+    }
+    private class ProgramDeviceTask extends AsyncTask<ProgramTaskParams, Integer, Integer> {
+        private boolean isSuccessful = true;
+        private int lastErrorLocation=0;
+        private int noOfErrors = 0;
+        private int noOfSuccess = 0;
+        private byte SendBuffer[] = new byte[6];
+
+
+        private void PrepareSendBufferToWrite(int address, int data) {
+            SendBuffer[0] = 0x32;
+            SendBuffer[1] = (byte) ((address & 0xff0000)>>16);
+            SendBuffer[2] = (byte) ((address & 0x00ff00)>>8);
+            SendBuffer[3] = (byte) ((address & 0x0000ff));
+            SendBuffer[4] = (byte) ((data & 0xff00)>>8);
+            SendBuffer[5] = (byte) ((data & 0x00ff));
+        }
+
+        private void PrepareStartCommand(){
+            SendBuffer[0] = 0x30;
+        }
+
+        private void PrepareEndCommand(){
+            SendBuffer[0] = 0x31;
+        }
+
+        protected Integer doInBackground(ProgramTaskParams... Params) {
+            UsbSerialPort port;
+            port = Params[0].Port;
+            byte[] Code = Params[0].Code;
+            int RecBuffLength=0;
+            byte RecBuffer[] = new byte[4];
+            int MAddress = 0x310000;
+            for (int i=0; i<5; i++) {
+                PrepareEndCommand();
+                try {
+                    port.purgeHwBuffers(true, true);
+                    port.write(SendBuffer, 10);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                PrepareStartCommand();
+                try {
+                    port.purgeHwBuffers(true, true);
+                    port.write(SendBuffer, 10);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            for (int i=0; i<1024; i++) {
+                PrepareSendBufferToWrite(MAddress++, Code[i]);
+                try {
+                    port.purgeHwBuffers(true, true);
+                    port.write(SendBuffer, 100);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    RecBuffer[0] = 3;
+                    RecBuffLength = port.read(RecBuffer, 100);
+                    if (RecBuffer[0]==0x30) {
+                        isSuccessful = false;
+                        lastErrorLocation = i;
+                        noOfErrors++;
+                    } else if (RecBuffer[0]==0x31)
+                        noOfSuccess++;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                publishProgress(((i+1)*100)/1024);
+            }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            PrepareEndCommand();
+            try {
+                port.purgeHwBuffers(true, true);
+                port.write(SendBuffer, 10);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return 1;
+        }
+
+        protected void onProgressUpdate(Integer... progress) {
+            setProgressPercent(progress[0]);
+        }
+
+        protected void onPostExecute(Integer result) {
+            if (isSuccessful)
+                PR_Log.append("\nDone");
+            else
+                PR_Log.append("\nErrors:"+noOfErrors+"\nSuccess:"+noOfSuccess+"\nLast error at:"+ lastErrorLocation);
+            PR_Log.append("\nDone "+"\n"+ Integer.toHexString(SendBuffer[0])+"\n"+ Integer.toHexString(SendBuffer[1])+"\n"+
+                    Integer.toHexString(SendBuffer[2])+"\n"+ Integer.toHexString(SendBuffer[3])
+                    +"\n"+ Integer.toHexString(SendBuffer[4])+"\n"+ Integer.toHexString(SendBuffer[5]));
+        }
+    }
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
