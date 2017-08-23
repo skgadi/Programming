@@ -43,8 +43,11 @@ import com.hoho.android.usbserial.driver.UsbSerialProber;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -956,10 +959,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void onConnectClick (View v) {
-        PR_Log.setText("");
+        //PR_Log.setText("");
         GenerateCodeFromDatabase(Database);
         PrintCodeToLog();
     }
+    public void WriteToLog (String str) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy | HH:mm:ss.SSS: ", Locale.ENGLISH);
+        PR_Log.setText(sdf.format(new Date())+str+"\n"+PR_Log.getText());
+    }
+
     /*----- Taken from another program and adapted -----*/
     private int ConnectUSB () {
         manager = (UsbManager) getSystemService(Context.USB_SERVICE);
@@ -999,21 +1007,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void SendAndVerify (View v) {
+        PR_ToggleConnect.setEnabled(false);
+        PR_Program.setEnabled(false);
         GenerateCodeFromDatabase(Database);
+        WriteToLog(MainContext.getResources().getString(R.string.PR_CodeGenSuccess));
         ProgramTaskParams Params = new ProgramTaskParams(Code, port);
         new ProgramDeviceTask().execute(Params);
+        WriteToLog(MainContext.getResources().getString(R.string.PR_ProgramStart)+
+                " = " + PR_Delay.getText()+".");
     }
     private void setProgressPercent(Integer Percent) {
         ProgramProgressBar.setProgress(Percent);
     }
+    //----- AsyncTask for programming
     private class ProgramDeviceTask extends AsyncTask<ProgramTaskParams, Integer, Integer> {
         private boolean isSuccessful = true;
-        private int lastErrorLocation=0;
-        private int noOfErrors = 0;
-        private int noOfSuccess = 0;
         private byte SendBuffer[] = new byte[6];
-
-
+        private boolean isCommSuccessDisplayed = false;
         private void PrepareSendBufferToWrite(int address, int data) {
             SendBuffer[0] = 0x32;
             SendBuffer[1] = (byte) ((address & 0xff0000)>>16);
@@ -1022,34 +1032,50 @@ public class MainActivity extends AppCompatActivity {
             SendBuffer[4] = (byte) ((data & 0xff00)>>8);
             SendBuffer[5] = (byte) ((data & 0x00ff));
         }
-
         private void PrepareStartCommand(){
             SendBuffer[0] = 0x30;
         }
-
         private void PrepareEndCommand(){
             SendBuffer[0] = 0x31;
         }
-
         protected Integer doInBackground(ProgramTaskParams... Params) {
             UsbSerialPort port;
             port = Params[0].Port;
             byte[] Code = Params[0].Code;
-            int RecBuffLength=0;
             byte RecBuffer[] = new byte[4];
             int MAddress = 0x310000;
-            for (int i=0; i<5; i++) {
-                PrepareEndCommand();
+            //----- StartCommand
+            for (int i=0; i<50; i++) {
+                PrepareStartCommand();
                 try {
                     port.purgeHwBuffers(true, true);
                     port.write(SendBuffer, 10);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                PrepareStartCommand();
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                PrepareSendBufferToWrite(MAddress, Code[0]);
                 try {
                     port.purgeHwBuffers(true, true);
-                    port.write(SendBuffer, 10);
+                    port.write(SendBuffer, 100);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    RecBuffer[0] = 3;
+                    port.read(RecBuffer, 100);
+                    if (RecBuffer[0]==0x31) {
+                        break;
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -1069,19 +1095,32 @@ public class MainActivity extends AppCompatActivity {
                 }
                 try {
                     RecBuffer[0] = 3;
-                    RecBuffLength = port.read(RecBuffer, 100);
-                    if (RecBuffer[0]==0x30) {
+                    port.read(RecBuffer, 100);
+                    if (RecBuffer[0]!=0x31) {
                         isSuccessful = false;
-                        lastErrorLocation = i;
-                        noOfErrors++;
-                    } else if (RecBuffer[0]==0x31)
-                        noOfSuccess++;
+                        break;
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
                 publishProgress(((i+1)*100)/1024);
             }
-            try {
+            //----- EndCommand
+            for (int i=0; i<2; i++) {
+                PrepareEndCommand();
+                try {
+                    port.purgeHwBuffers(true, true);
+                    port.write(SendBuffer, 10);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            /*try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -1092,22 +1131,24 @@ public class MainActivity extends AppCompatActivity {
                 port.write(SendBuffer, 10);
             } catch (IOException e) {
                 e.printStackTrace();
-            }
+            }*/
             return 1;
         }
-
         protected void onProgressUpdate(Integer... progress) {
             setProgressPercent(progress[0]);
+            if (!isCommSuccessDisplayed) {
+                WriteToLog(MainContext.getResources().getString(R.string.PR_CommSuccess));
+                isCommSuccessDisplayed = true;
+            }
         }
-
         protected void onPostExecute(Integer result) {
             if (isSuccessful)
-                PR_Log.append("\nDone");
+                WriteToLog(MainContext.getResources().getString(R.string.PR_Success));
             else
-                PR_Log.append("\nErrors:"+noOfErrors+"\nSuccess:"+noOfSuccess+"\nLast error at:"+ lastErrorLocation);
-            PR_Log.append("\nDone "+"\n"+ Integer.toHexString(SendBuffer[0])+"\n"+ Integer.toHexString(SendBuffer[1])+"\n"+
-                    Integer.toHexString(SendBuffer[2])+"\n"+ Integer.toHexString(SendBuffer[3])
-                    +"\n"+ Integer.toHexString(SendBuffer[4])+"\n"+ Integer.toHexString(SendBuffer[5]));
+                WriteToLog(MainContext.getResources().getString(R.string.PR_Fail));
+            PR_ToggleConnect.setEnabled(true);
+            PR_Program.setEnabled(true);
+            setProgressPercent(0);
         }
     }
 

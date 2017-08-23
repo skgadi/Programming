@@ -144,4 +144,10 @@
     <string name="error_device_disconnect">Unknown error. Detach, re-attach the device to fix the problem.</string>
     <string name="success_device_connected">Device is successfully connected.</string>
     <string name="success_device_disconnected">Device is successfully disconnected.</string>
+    <string name="PR_LogFirst">Programming log is shown here.</string>
+    <string name="PR_ProgramStart">Programming device initiated with delay</string>
+    <string name="PR_CommSuccess">Communication is successful. Programming started. Progress is shown in the bar above.</string>
+    <string name="PR_CodeGenSuccess">Code is generated successfully.</string>
+    <string name="PR_Success">Successfully programmed the device.</string>
+    <string name="PR_Fail">Failed to program the device. Try again.</string>
 </resources>
