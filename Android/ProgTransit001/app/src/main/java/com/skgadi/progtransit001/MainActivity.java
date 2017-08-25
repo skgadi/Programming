@@ -662,6 +662,7 @@ public class MainActivity extends AppCompatActivity {
         PopulateSettingsTable();
     }
     private void PopulateSettingsTable (){
+        ST_SettingsTable.setVisibility(View.GONE);
         String[] Captions = getResources().getStringArray(R.array.SettingsCaptions);
         String[] Legends = getResources().getStringArray(R.array.SettingsLegends);
         TableRow TempRow;
@@ -791,6 +792,7 @@ public class MainActivity extends AppCompatActivity {
         ST_SettingsTable.addView(TempRow);
         //----- End captions
         InsertCaptionButtonsRow(ST_SettingsTable, Captions);
+        ST_SettingsTable.setVisibility(View.GONE);
     }
     /*----- MV_Program Functions -----*/
     private void MV_Program_ResetView() {
@@ -900,6 +902,9 @@ public class MainActivity extends AppCompatActivity {
                                 (Code[Pointer00+Pointer01*5+k+204] | (1<<(l%8)));
                     }
                 }
+                //PORTB are from B2-B7
+                Code[Pointer00+Pointer01*5+203] <<= 2;
+                Code[Pointer00+Pointer01*5+205] <<= 2;
                 Pointer01++;
                 TempCursor.moveToNext();
             }
@@ -937,26 +942,30 @@ public class MainActivity extends AppCompatActivity {
         }
         return OutBytes;
     }
-    private void PrintHorizontalAddress () {
-        PR_Log.append("\n\t\t\t\t");
+    private String PrintHorizontalAddress () {
+        String out="";
+        out += "\n\t\t\t\t";
         for (int i=0; i<16; i++) {
-            PR_Log.append(String.format("0x%1$02X\t",i));
-            if ((i+1)%4 ==0) PR_Log.append("\t");
-            if ((i+1)%8 ==0) PR_Log.append("\t");
+            out += String.format("0x%1$02X\t",i);
+            if ((i+1)%4 ==0) out += ("\t");
+            if ((i+1)%8 ==0) out += ("\t");
         }
-        PR_Log.append("\n\n");
+        out += ("\n\n");
+        return out;
     }
-    private void PrintCodeToLog () {
+    private String PrintCodeToLog () {
+        String out="\n";
         for (int i=0; i<(Code.length+1)/16; i++) {
             if(i%5==0) PrintHorizontalAddress();
-            PR_Log.append(String.format("0x%1$03X:\t",i*16));
+            out += (String.format("0x%1$03X:\t",i*16));
             for (int j=0; j<16; j++) {
-                PR_Log.append(String.format("\t0x%1$02X", Code[i * 16 + j]));
-                if ((j+1)%4 ==0) PR_Log.append("\t");
-                if ((j+1)%8 ==0) PR_Log.append("\t");
+                out += (String.format("\t0x%1$02X", Code[i * 16 + j]));
+                if ((j+1)%4 ==0) out += ("\t");
+                if ((j+1)%8 ==0) out += ("\t");
             }
-            PR_Log.append("\n");
+            out += ("\n");
         }
+        return out;
     }
     public void onConnectClick (View v) {
         //PR_Log.setText("");
@@ -1011,6 +1020,8 @@ public class MainActivity extends AppCompatActivity {
         PR_Program.setEnabled(false);
         GenerateCodeFromDatabase(Database);
         WriteToLog(MainContext.getResources().getString(R.string.PR_CodeGenSuccess));
+        /*WriteToLog(MainContext.getResources().getString(R.string.PR_CodeGenSuccess) +
+                PrintCodeToLog());/**/
         ProgramTaskParams Params = new ProgramTaskParams(Code, port);
         new ProgramDeviceTask().execute(Params);
         WriteToLog(MainContext.getResources().getString(R.string.PR_ProgramStart)+
