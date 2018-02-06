@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Control Toolbox</string>
+    <string name="BUTTON_PID">PID Controller</string>
+    <string name="BUTTON_IDENIFICATION0">Zero order identification</string>
+    <string name="BUTTON_IDENIFICATION1">First order identification</string>
+    <string name="BUTTON_IDENIFICATION2">Second order identification</string>
+    <string-array name="SCREENS_LIST">
+        <item>Main window</item>
+        <item>PID Controller</item>
+        <item>Zero order identification</item>
+        <item>First order identification</item>
+        <item>Second order identification</item>
+    </string-array>
+    <string name="EXIT_MESSAGE">Hit back again to exit the app</string>
+</resources>
