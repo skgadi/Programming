@@ -2,6 +2,8 @@ package com.skgadi.controltoolbox;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -33,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean CloseApp;
     protected String[] ScreensList;
 
+
+    //--- Back button handling
     @Override
     public void onBackPressed() {
         if (CloseApp)
@@ -42,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
             CloseApp = true;
             Toast.makeText(getApplicationContext(),
                     getResources().getString(R.string.EXIT_MESSAGE),
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_SHORT).show();
         } else {
             CloseApp = false;
             SetScreenTo(SCREENS.MAIN_SCREEN);
@@ -117,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         setTitle(getResources().getString(R.string.app_name)
                 + ": "
                 +ScreensList[PresentScreen]);/**/
-        Toast.makeText(getApplicationContext(), Screen.toString(), Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(), Screen.toString(), Toast.LENGTH_SHORT).show();
     }
 
 
@@ -133,6 +137,40 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    //--- Menu handling
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.con_sim_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+    boolean USBConnected = false;
+    boolean Simulating = false;
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.connect:
+                if(USBConnected){
+                    item.setIcon(R.drawable.icon_connect);
+                    USBConnected=false;
+                }else{
+                    item.setIcon(R.drawable.icon_disconnect);
+                    USBConnected=true;
+                }
+                break;
+            case R.id.simulate:
+                if(Simulating){
+                    //change your view and sort it by Alphabet
+                    item.setIcon(R.drawable.icon_simulate_start);
+                    Simulating = false;
+                }else{
+                    //change your view and sort it by Date of Birth
+                    item.setIcon(R.drawable.icon_simulate_stop);
+                    Simulating = true;
+                }
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 }
 
 
