@@ -1,19 +1,32 @@
 package com.skgadi.controltoolbox;
 
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.hoho.android.usbserial.driver.CdcAcmSerialDriver;
+import com.hoho.android.usbserial.driver.ProbeTable;
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialPort;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +39,12 @@ enum SCREENS {
     IDENTIFICATION2
 }
 
+enum SIMULATION_STATUS {
+    DISABLED,
+    OFF,
+    ON
+}
+
 public class MainActivity extends AppCompatActivity {
 
     public LineChart chart;
@@ -34,24 +53,44 @@ public class MainActivity extends AppCompatActivity {
     private int PresentScreen;
     private boolean CloseApp;
     protected String[] ScreensList;
+    MenuItem ConnectButton;
+    MenuItem SimulateButton;
+    //----- Communication and other from prev program
+    protected UsbManager manager;
+    ProbeTable customTable;
+    //UsbSerialProber prober; // Not required for arduino
+    List<UsbSerialDriver> drivers;
+    UsbSerialDriver driver;
+    UsbDeviceConnection connection;
+    private UsbSerialPort port;
+    boolean DeviceConnected = false;
+    SIMULATION_STATUS SimulationState;
+
+
 
 
     //--- Back button handling
     @Override
     public void onBackPressed() {
-        if (CloseApp)
-            finish();
-        //super.onBackPressed();
-        if (PresentScreen == 0) {
-            CloseApp = true;
+        if (SimulationState == SIMULATION_STATUS.ON) {
             Toast.makeText(getApplicationContext(),
-                    getResources().getString(R.string.EXIT_MESSAGE),
+                    getResources().getStringArray(R.array.TOASTS)[9],
                     Toast.LENGTH_SHORT).show();
         } else {
-            CloseApp = false;
-            SetScreenTo(SCREENS.MAIN_SCREEN);
+            if (CloseApp && PresentScreen == 0)
+                finish();
+            else
+                CloseApp = false;
+            //super.onBackPressed();
+            if (PresentScreen == 0) {
+                CloseApp = true;
+                Toast.makeText(getApplicationContext(),
+                        getResources().getStringArray(R.array.TOASTS)[0],
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                SetScreenTo(SCREENS.MAIN_SCREEN);
+            }
         }
-
     }
 
 
@@ -71,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
         DefaultLayoutParams =  new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.FILL_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
+        SimulationState = SIMULATION_STATUS.DISABLED;
         //--- Add buttons
         ScreensList = getResources().getStringArray(R.array.SCREENS_LIST);
         Button ButtonForMainScreen;
@@ -81,7 +121,12 @@ public class MainActivity extends AppCompatActivity {
             ButtonForMainScreen.setOnClickListener(new OnMainWindowButton(i));
             Screens[0].addView(ButtonForMainScreen);
         }
-        SetScreenTo(SCREENS.MAIN_SCREEN);
+
+        //--- USB related initialization
+        /*customTable = new ProbeTable();
+        //customTable.addProduct(0x4D8, 0x000A, CdcAcmSerialDriver.class);
+        customTable.addProduct(0x2341, 0x43, CdcAcmSerialDriver.class);
+        prober = new UsbSerialProber(customTable);*/ // Not required for arduino
     }
 
     public void DrawSine(View v) throws InterruptedException {
@@ -104,7 +149,8 @@ public class MainActivity extends AppCompatActivity {
             Screens[i].setVisibility(View.GONE);
         PresentScreen = Screen.ordinal();
         Screens[PresentScreen].setVisibility(View.VISIBLE);
-        switch (Screen){
+        SetProperSimulateButtonStatus();
+        /*switch (Screen){
             case MAIN_SCREEN:
                 break;
             case PID:
@@ -120,8 +166,9 @@ public class MainActivity extends AppCompatActivity {
         }
         setTitle(getResources().getString(R.string.app_name)
                 + ": "
-                +ScreensList[PresentScreen]);/**/
-        Toast.makeText(getApplicationContext(), Screen.toString(), Toast.LENGTH_SHORT).show();
+                +ScreensList[PresentScreen]);
+        Toast.makeText(getApplicationContext(), ScreensList[PresentScreen], Toast.LENGTH_SHORT).show();
+        */
     }
 
 
@@ -141,36 +188,144 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.con_sim_menu, menu);
+        ConnectButton = menu.getItem(0);
+        SimulateButton = menu.getItem(1);
         return super.onCreateOptionsMenu(menu);
     }
-    boolean USBConnected = false;
-    boolean Simulating = false;
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.connect:
-                if(USBConnected){
-                    item.setIcon(R.drawable.icon_connect);
-                    USBConnected=false;
-                }else{
-                    item.setIcon(R.drawable.icon_disconnect);
-                    USBConnected=true;
-                }
+                if (DeviceConnected)
+                    DisconnectUSB();
+                else
+                    ConnectUSB();
                 break;
             case R.id.simulate:
-                if(Simulating){
-                    //change your view and sort it by Alphabet
-                    item.setIcon(R.drawable.icon_simulate_start);
-                    Simulating = false;
-                }else{
-                    //change your view and sort it by Date of Birth
-                    item.setIcon(R.drawable.icon_simulate_stop);
-                    Simulating = true;
-                }
+                if(SimulationState == SIMULATION_STATUS.ON)
+                    ChangeStateToNotSimulating();
+                else
+                    if (SimulationState == SIMULATION_STATUS.OFF)
+                    ChangeStateToSimulating();
+                else
+                    if (SimulationState == SIMULATION_STATUS.DISABLED)
+                        Toast.makeText(MainActivity.this,
+                            getResources().getStringArray(R.array.TOASTS)[8],
+                            Toast.LENGTH_SHORT).show();
                 break;
         }
         return super.onOptionsItemSelected(item);
     }
+    void SetProperSimulateButtonStatus () {
+        if (!DeviceConnected || PresentScreen == 0) {
+            ChangeStateToSimulateDisabled();
+        } else {
+            if (SimulationState == SIMULATION_STATUS.ON) {
+                ChangeStateToSimulating();
+            } else {
+                ChangeStateToNotSimulating();
+            }
+        }
+    }
+    void StopSimulation () {
+
+    }
+    void ChangeStateToConnected () {
+        DeviceConnected = true;
+        ConnectButton.setIcon(R.drawable.icon_disconnect);
+        SetProperSimulateButtonStatus ();
+    }
+    void ChangeStateToDisconnected () {
+        DeviceConnected = false;
+        ConnectButton.setIcon(R.drawable.icon_connect);
+        SetProperSimulateButtonStatus();
+    }
+    void ChangeStateToSimulateDisabled () {
+        SimulationState = SIMULATION_STATUS.DISABLED;
+        SimulateButton.setIcon(R.drawable.icon_simulate_disabled);
+    }
+    void ChangeStateToSimulating () {
+        SimulationState = SIMULATION_STATUS.ON;
+        SimulateButton.setIcon(R.drawable.icon_simulate_stop);
+    }
+    void ChangeStateToNotSimulating () {
+        SimulationState = SIMULATION_STATUS.OFF;
+        SimulateButton.setIcon(R.drawable.icon_simulate_start);
+    }
+    //--- USB Programming
+    private int ConnectUSB () {
+        try {
+            manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+            //drivers = prober.findAllDrivers(manager); // Not required for arduino
+            drivers =  UsbSerialProber.getDefaultProber().findAllDrivers(manager);;
+        } catch (Exception e) {
+            Toast.makeText(MainActivity.this,
+                    getResources().getStringArray(R.array.TOASTS)[7],
+                    Toast.LENGTH_SHORT).show();
+            ChangeStateToDisconnected();
+            return 0;
+        }
+        if (drivers.isEmpty()) {
+            Toast.makeText(MainActivity.this,
+                    getResources().getStringArray(R.array.TOASTS)[1],
+                    Toast.LENGTH_SHORT).show();
+            ChangeStateToDisconnected();
+            return 0;
+        }
+        driver = drivers.get(0);
+        connection = manager.openDevice(driver.getDevice());
+        if (connection == null) {
+            // You probably need to call UsbManager.requestPermission(driver.getDevice(), ..)
+            String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
+            PendingIntent mPermissionIntent =
+                    PendingIntent.getBroadcast(MainActivity.this,
+                            0,
+                            new Intent(ACTION_USB_PERMISSION),
+                            0);
+            manager.requestPermission(driver.getDevice(), mPermissionIntent);
+            Toast.makeText(MainActivity.this,
+                    getResources().getStringArray(R.array.TOASTS)[2],
+                    Toast.LENGTH_SHORT).show();
+            ChangeStateToDisconnected();
+            return 1;
+        }
+        port = driver.getPorts().get(0);
+        try {
+            port.open(connection);
+            port.setParameters(115200,
+                    8,
+                    UsbSerialPort.STOPBITS_1,
+                    UsbSerialPort.PARITY_NONE);
+            Toast.makeText(MainActivity.this,
+                    getResources().getStringArray(R.array.TOASTS)[3],
+                    Toast.LENGTH_SHORT).show();
+            ChangeStateToConnected();
+            return 2;
+        } catch (IOException e) {
+            Toast.makeText(MainActivity.this,
+                    getResources().getStringArray(R.array.TOASTS)[4],
+                    Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+            ChangeStateToDisconnected();
+            return 0;
+        }
+    }
+    void DisconnectUSB () {
+        try {
+            port.close();
+            Toast.makeText(MainActivity.this,
+                    getResources().getStringArray(R.array.TOASTS)[5],
+                    Toast.LENGTH_SHORT).show();
+            ChangeStateToDisconnected();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(MainActivity.this,
+                    getResources().getStringArray(R.array.TOASTS)[6],
+                    Toast.LENGTH_SHORT).show();
+            ChangeStateToDisconnected();
+        }
+    }
+
 }
 
 
