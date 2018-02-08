@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -50,11 +51,13 @@ public class MainActivity extends AppCompatActivity {
     public LineChart chart;
     private LinearLayout.LayoutParams DefaultLayoutParams;
     private LinearLayout[] Screens;
-    private int PresentScreen;
+    SCREENS PresentScreen;
     private boolean CloseApp;
     protected String[] ScreensList;
     MenuItem ConnectButton;
     MenuItem SimulateButton;
+
+
     //----- Communication and other from prev program
     protected UsbManager manager;
     ProbeTable customTable;
@@ -77,12 +80,12 @@ public class MainActivity extends AppCompatActivity {
                     getResources().getStringArray(R.array.TOASTS)[9],
                     Toast.LENGTH_SHORT).show();
         } else {
-            if (CloseApp && PresentScreen == 0)
+            if (CloseApp && PresentScreen == SCREENS.MAIN_SCREEN)
                 finish();
             else
                 CloseApp = false;
             //super.onBackPressed();
-            if (PresentScreen == 0) {
+            if (PresentScreen == SCREENS.MAIN_SCREEN) {
                 CloseApp = true;
                 Toast.makeText(getApplicationContext(),
                         getResources().getStringArray(R.array.TOASTS)[0],
@@ -130,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void DrawSine(View v) throws InterruptedException {
-        chart = (LineChart) findViewById(R.id.chart);
+        chart = (LineChart) findViewById(R.id.pid_chart0);
         List<Entry> entries = new ArrayList<Entry>();
         LineDataSet dataSet = new LineDataSet(entries, "Label");
         LineData lineData = new LineData(dataSet);
@@ -147,8 +150,8 @@ public class MainActivity extends AppCompatActivity {
     private void SetScreenTo (SCREENS Screen) {
         for (int i=0; i<SCREENS.values().length; i++)
             Screens[i].setVisibility(View.GONE);
-        PresentScreen = Screen.ordinal();
-        Screens[PresentScreen].setVisibility(View.VISIBLE);
+        PresentScreen = Screen;
+        Screens[PresentScreen.ordinal()].setVisibility(View.VISIBLE);
         SetProperSimulateButtonStatus();
         /*switch (Screen){
             case MAIN_SCREEN:
@@ -202,22 +205,30 @@ public class MainActivity extends AppCompatActivity {
                     ConnectUSB();
                 break;
             case R.id.simulate:
-                if(SimulationState == SIMULATION_STATUS.ON)
+                if(SimulationState == SIMULATION_STATUS.ON) {
                     ChangeStateToNotSimulating();
-                else
-                    if (SimulationState == SIMULATION_STATUS.OFF)
-                    ChangeStateToSimulating();
-                else
-                    if (SimulationState == SIMULATION_STATUS.DISABLED)
+                } else {
+                    if (SimulationState == SIMULATION_STATUS.OFF) {
+                        ChangeStateToSimulating();
+                        SimulateParams SParams = new SimulateParams(port, PresentScreen);
+                        new SimulateAlgorithm().execute(SParams);
                         Toast.makeText(MainActivity.this,
-                            getResources().getStringArray(R.array.TOASTS)[8],
-                            Toast.LENGTH_SHORT).show();
+                                "started simulating",
+                                Toast.LENGTH_SHORT).show();
+                    } else {
+                        if (SimulationState == SIMULATION_STATUS.DISABLED) {
+                            Toast.makeText(MainActivity.this,
+                                    getResources().getStringArray(R.array.TOASTS)[8],
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
                 break;
         }
         return super.onOptionsItemSelected(item);
     }
     void SetProperSimulateButtonStatus () {
-        if (!DeviceConnected || PresentScreen == 0) {
+        if (!DeviceConnected || PresentScreen == SCREENS.MAIN_SCREEN) {
             ChangeStateToSimulateDisabled();
         } else {
             if (SimulationState == SIMULATION_STATUS.ON) {
@@ -323,6 +334,85 @@ public class MainActivity extends AppCompatActivity {
                     getResources().getStringArray(R.array.TOASTS)[6],
                     Toast.LENGTH_SHORT).show();
             ChangeStateToDisconnected();
+        }
+    }
+
+    /*
+    Async task for implementing algorithms in real time
+    */
+    private static class SimulateParams {
+        UsbSerialPort Port;
+        SCREENS Screen;
+        SimulateParams (UsbSerialPort Prt, SCREENS Srn) {
+            Port = Prt;
+            Screen = Srn;
+        }
+    }
+    private static class ProgressParams {
+        float[] Values;
+        ProgressParams (float[] values) {
+            Values = values;
+        }
+
+    }
+    private class SimulateAlgorithm extends AsyncTask <SimulateParams, ProgressParams, Integer> {
+        UsbSerialPort port;
+        LineData lineData0, lineData1, lineData2;
+        @Override
+        protected Integer doInBackground(SimulateParams... Params) {
+            float[] PValues = new float[2];
+            List<Entry> entries = new ArrayList<Entry>();
+            LineDataSet dataSet = new LineDataSet(entries, "Label");
+            lineData0 = new LineData(dataSet);
+            ProgressParams PParams = new ProgressParams(PValues);
+            port = Params[0].Port;
+            byte SendBuffer[] = new byte[3];
+            SendBuffer[0] = '1';
+            SendBuffer[0] = '\r';
+            SendBuffer[0] = '\n';
+            byte RecBuffer[] = new byte[25];
+            for (int i=0;i<100; i++) {
+                try {
+                    port.write(SendBuffer,10);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    port.read(RecBuffer, 100);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                PValues[0] = i;
+                PValues[1] = 2* ((float) Math.pow(i, 2));
+                lineData0.addEntry( new Entry(PValues[0], PValues[1]), 0);
+                publishProgress(PParams);
+            }
+            return null;
+        }
+
+        protected void onProgressUpdate(ProgressParams... Params) {
+            chart = (LineChart) findViewById(R.id.pid_chart0);
+            LineData lineData;
+            //if (Params[0].Values[0]==0) {
+                List<Entry> entries = new ArrayList<Entry>();
+                LineDataSet dataSet = new LineDataSet(entries, "Label");
+                lineData = new LineData(dataSet);
+            //} else {
+               // lineData = chart.getLineData();
+            //}
+
+            chart.setData(lineData0);
+            chart.invalidate();
+
+        }
+
+        protected void onPostExecute(Integer result) {
+
         }
     }
 
