@@ -28,6 +28,7 @@ import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -368,29 +369,38 @@ public class MainActivity extends AppCompatActivity {
             port = Params[0].Port;
             byte SendBuffer[] = new byte[3];
             SendBuffer[0] = '1';
-            SendBuffer[0] = '\r';
-            SendBuffer[0] = '\n';
+            SendBuffer[1] = '\r';
+            SendBuffer[2] = '\n';
             byte RecBuffer[] = new byte[25];
-            for (int i=0;i<100; i++) {
+            for (int i=0;i<10; i++) {
+                try {
+                    port.purgeHwBuffers()
+                    port.write(SendBuffer,10);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 try {
                     port.write(SendBuffer,10);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
                 try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    port.read(RecBuffer, 100);
+                    port.read(RecBuffer, 10);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                PValues[0] = i;
-                PValues[1] = 2* ((float) Math.pow(i, 2));
-                lineData0.addEntry( new Entry(PValues[0], PValues[1]), 0);
-                publishProgress(PParams);
+                String str;
+                try {
+                    str = new String(RecBuffer, "UTF-8");
+                    String[] separated = str.split("\r\n");
+
+                    PValues[0]  = i;
+                    PValues[1] = separated[2].length();//Float.parseFloat(separated[0]);
+                    lineData0.addEntry( new Entry(PValues[0], PValues[1]), 0);
+                    publishProgress(PParams);/**/
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }/**/
             }
             return null;
         }
@@ -399,9 +409,9 @@ public class MainActivity extends AppCompatActivity {
             chart = (LineChart) findViewById(R.id.pid_chart0);
             LineData lineData;
             //if (Params[0].Values[0]==0) {
-                List<Entry> entries = new ArrayList<Entry>();
+                /*List<Entry> entries = new ArrayList<Entry>();
                 LineDataSet dataSet = new LineDataSet(entries, "Label");
-                lineData = new LineData(dataSet);
+                lineData = new LineData(dataSet);*/
             //} else {
                // lineData = chart.getLineData();
             //}
@@ -412,7 +422,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(Integer result) {
-
+            Toast.makeText(getApplicationContext(),
+                    "Finished",
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
