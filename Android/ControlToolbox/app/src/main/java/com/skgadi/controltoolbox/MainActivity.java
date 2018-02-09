@@ -367,40 +367,33 @@ public class MainActivity extends AppCompatActivity {
             lineData0 = new LineData(dataSet);
             ProgressParams PParams = new ProgressParams(PValues);
             port = Params[0].Port;
-            byte SendBuffer[] = new byte[3];
-            SendBuffer[0] = '1';
-            SendBuffer[1] = '\r';
-            SendBuffer[2] = '\n';
-            byte RecBuffer[] = new byte[25];
+            byte SendBuffer[] = new byte[2];
+            SendBuffer[0] = 0;
+            SendBuffer[1] = 1;
+            byte RecBuffer[] = new byte[6];
+            try {
+                port.purgeHwBuffers(true, true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            String str;
+            long StartTime = System.currentTimeMillis();
             for (int i=0;i<10; i++) {
                 try {
-                    port.purgeHwBuffers()
-                    port.write(SendBuffer,10);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                try {
-                    port.write(SendBuffer,10);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    port.read(RecBuffer, 10);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                String str;
-                try {
-                    str = new String(RecBuffer, "UTF-8");
-                    String[] separated = str.split("\r\n");
-
-                    PValues[0]  = i;
-                    PValues[1] = separated[2].length();//Float.parseFloat(separated[0]);
+                    for (int j=0; j<6; j++)
+                        RecBuffer[j] = 0;
+                    port.write(SendBuffer,100);
+                    port.read(RecBuffer, 100);
+                    PValues[0]  = (System.currentTimeMillis()-StartTime);
+                    PValues[1] = ConvertBytesToInt(RecBuffer[0], RecBuffer[1]);
                     lineData0.addEntry( new Entry(PValues[0], PValues[1]), 0);
                     publishProgress(PParams);/**/
                 } catch (Exception e) {
                     e.printStackTrace();
-                }/**/
+                }
+                while (((System.currentTimeMillis()-StartTime)%200) != 0) {
+
+                }
             }
             return null;
         }
@@ -425,6 +418,17 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(),
                     "Finished",
                     Toast.LENGTH_SHORT).show();
+        }
+        private Integer ConvertBytesToInt (byte LSB, byte MSB) {
+            Integer val=0;
+            val = val | LSB ;
+            val = val | ((int) MSB<<8) ;
+            if ((MSB & 0x80) > 0) {
+                for (int i=0; i< (Integer.BYTES-2); i++) {
+                    val = val | (0xff<<8*(i+1));
+                }
+            }
+            return val;
         }
     }
 
