@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">Control Toolbox</string>
+    <string name="BUTTON_PID">PID Controller</string>
+    <string name="BUTTON_IDENIFICATION0">Zero order identification</string>
+    <string name="BUTTON_IDENIFICATION1">First order identification</string>
+    <string name="BUTTON_IDENIFICATION2">Second order identification</string>
+    <string-array name="SCREENS_LIST">
+        <item>Main window</item>
+        <item>PID Controller</item>
+        <item>Zero order identification</item>
+        <item>First order identification</item>
+        <item>Second order identification</item>
+    </string-array>
+
+
+
+
+
+    <string-array name="TOASTS">
+        <item>Hit the Back button again to exit</item>
+        <item>Device is not pluged to the phone</item>
+        <item>Couldn\'t able to establish a connection. Try again with proper permissions.</item>
+        <item>Device is successfully connected.</item>
+        <item>Unable to open the port. Detach, re-attach the device to fix the problem.</item>
+        <item>Device is successfully disconnected.</item>
+        <item>Unknown error. Detach, re-attach the device to fix the problem.</item>
+        <item>Your android device is not having OTG enabled.</item>
+        <item>Simulation is disabled: Either your device is not connected or you are in a wrong window.</item>
+        <item>You cannot exit to the Main Menu while the simulation is running. Stop the simulation before proceeding to the main menu.</item>
+        <item></item>
+    </string-array>
+
+</resources>

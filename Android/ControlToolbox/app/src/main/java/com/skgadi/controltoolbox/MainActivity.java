@@ -8,6 +8,7 @@ import android.hardware.usb.UsbManager;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,11 +27,18 @@ import com.hoho.android.usbserial.driver.ProbeTable;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
+import com.hoho.android.usbserial.util.SerialInputOutputManager;
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.series.BarGraphSeries;
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 enum SCREENS {
@@ -44,7 +52,8 @@ enum SCREENS {
 enum SIMULATION_STATUS {
     DISABLED,
     OFF,
-    ON
+    ON,
+    OFF_REQUESTED
 }
 
 public class MainActivity extends AppCompatActivity {
@@ -70,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     boolean DeviceConnected = false;
     SIMULATION_STATUS SimulationState;
 
+    SimulateAlgorithm SimHandle;
 
 
 
@@ -133,21 +143,6 @@ public class MainActivity extends AppCompatActivity {
         prober = new UsbSerialProber(customTable);*/ // Not required for arduino
     }
 
-    public void DrawSine(View v) throws InterruptedException {
-        chart = (LineChart) findViewById(R.id.pid_chart0);
-        List<Entry> entries = new ArrayList<Entry>();
-        LineDataSet dataSet = new LineDataSet(entries, "Label");
-        LineData lineData = new LineData(dataSet);
-
-
-        for (int i=0; i<(10*360); i++) {
-            lineData.addEntry( new Entry(i/10.0f, (float)(Math.sin(i*Math.PI/1800))), 0);
-            //chart.getData().addEntry(new Entry(i/10.0f, (float)(Math.sin(i*Math.PI/1800))), 0);
-        }
-        chart.setData(lineData);
-        chart.invalidate();
-    }
-
     private void SetScreenTo (SCREENS Screen) {
         for (int i=0; i<SCREENS.values().length; i++)
             Screens[i].setVisibility(View.GONE);
@@ -207,22 +202,21 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.simulate:
                 if(SimulationState == SIMULATION_STATUS.ON) {
-                    ChangeStateToNotSimulating();
-                } else {
-                    if (SimulationState == SIMULATION_STATUS.OFF) {
-                        ChangeStateToSimulating();
-                        SimulateParams SParams = new SimulateParams(port, PresentScreen);
-                        new SimulateAlgorithm().execute(SParams);
-                        Toast.makeText(MainActivity.this,
-                                "started simulating",
-                                Toast.LENGTH_SHORT).show();
-                    } else {
-                        if (SimulationState == SIMULATION_STATUS.DISABLED) {
-                            Toast.makeText(MainActivity.this,
-                                    getResources().getStringArray(R.array.TOASTS)[8],
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
+                    SimHandle.cancel(true);
+                }
+                if (SimulationState == SIMULATION_STATUS.DISABLED) {
+                    Toast.makeText(MainActivity.this,
+                            getResources().getStringArray(R.array.TOASTS)[8],
+                            Toast.LENGTH_SHORT).show();
+                }
+                if (SimulationState == SIMULATION_STATUS.OFF) {
+                    ChangeStateToSimulating();
+                    SimulateParams SParams = new SimulateParams(port, PresentScreen);
+                    SimHandle = new SimulateAlgorithm();
+                    SimHandle.execute(SParams);
+                    Toast.makeText(MainActivity.this,
+                            "started simulating",
+                            Toast.LENGTH_SHORT).show();
                 }
                 break;
         }
@@ -358,66 +352,141 @@ public class MainActivity extends AppCompatActivity {
     }
     private class SimulateAlgorithm extends AsyncTask <SimulateParams, ProgressParams, Integer> {
         UsbSerialPort port;
-        LineData lineData0, lineData1, lineData2;
+        LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
+
+        boolean IsProgressFirstIteration=true;
+        DataPoint[] DataPoints;
+        float[] RecData = new float[3];
+        int readCount=0;
+        boolean isValidRead=false;
+        int readSize = 0;
+
+
+        private ExecutorService mExecutor = Executors.newSingleThreadExecutor();
+        private SerialInputOutputManager mSerialIoManager;
+        private final SerialInputOutputManager.Listener mListener =
+                new SerialInputOutputManager.Listener() {
+
+                    @Override
+                    public void onRunError(Exception e) {
+                        //Log.d(TAG, "Runner stopped.");
+                    }
+
+                    @Override
+                    public void onNewData(final byte[] data) {
+                        DataRecUpdate(data);
+                        /*MainActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                MainActivity.this.updateReceivedData(data);
+                            }
+                        });*/
+                    }
+                };
+        private void DataRecUpdate (byte[] data) {
+            String Rec = new String(data);
+            Log.i("USBRec", Rec);
+            String[] RecStrs = Rec.split(";");
+            if (RecStrs.length == 3) {
+                isValidRead = true;
+                for (int i = 0; i < RecStrs.length; i++) {
+                    if (RecStrs.length > i)
+                        RecData[i] = Float.parseFloat(RecStrs[i]);
+                }
+            }
+            readCount++;
+        }
+
         @Override
         protected Integer doInBackground(SimulateParams... Params) {
             float[] PValues = new float[2];
-            List<Entry> entries = new ArrayList<Entry>();
-            LineDataSet dataSet = new LineDataSet(entries, "Label");
-            lineData0 = new LineData(dataSet);
+            //series = new LineGraphSeries<DataPoint>();
+            DataPoints = new DataPoint[1000];
+
             ProgressParams PParams = new ProgressParams(PValues);
             port = Params[0].Port;
-            byte SendBuffer[] = new byte[2];
-            SendBuffer[0] = 0;
-            SendBuffer[1] = 1;
-            byte RecBuffer[] = new byte[6];
+
+            //mSerialIoManager = new SerialInputOutputManager(port, mListener);
+            //mExecutor.submit(mSerialIoManager);
+
             try {
                 port.purgeHwBuffers(true, true);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            String str;
             long StartTime = System.currentTimeMillis();
-            for (int i=0;i<10; i++) {
+            int PresentItem=0;
+            byte[] ReadBuff = new byte[20];
+            while(!this.isCancelled()) {
                 try {
-                    for (int j=0; j<6; j++)
-                        RecBuffer[j] = 0;
-                    port.write(SendBuffer,100);
-                    port.read(RecBuffer, 100);
-                    PValues[0]  = (System.currentTimeMillis()-StartTime);
-                    PValues[1] = ConvertBytesToInt(RecBuffer[0], RecBuffer[1]);
-                    lineData0.addEntry( new Entry(PValues[0], PValues[1]), 0);
-                    publishProgress(PParams);/**/
+                    port.write("00".getBytes(),1);
+                    port.read(ReadBuff, 1);
+                    DataRecUpdate(ReadBuff);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                while (((System.currentTimeMillis()-StartTime)%200) != 0) {
-
-                }
+                boolean RecedData = false;
+                do {
+                    if (isValidRead) {
+                        isValidRead  = false;
+                        PValues[0]  = (System.currentTimeMillis()-StartTime)/1000.0f;
+                        PValues[1] = RecData[0];
+                        publishProgress(PParams);
+                        PresentItem++;
+                    }
+                } while ((((System.currentTimeMillis()-StartTime))%10) != 0);
             }
             return null;
         }
 
+        @Override
         protected void onProgressUpdate(ProgressParams... Params) {
-            chart = (LineChart) findViewById(R.id.pid_chart0);
-            LineData lineData;
-            //if (Params[0].Values[0]==0) {
-                /*List<Entry> entries = new ArrayList<Entry>();
-                LineDataSet dataSet = new LineDataSet(entries, "Label");
-                lineData = new LineData(dataSet);*/
-            //} else {
-               // lineData = chart.getLineData();
-            //}
-
-            chart.setData(lineData0);
-            chart.invalidate();
-
+            GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
+            series.appendData(new DataPoint(Params[0].Values[0],Params[0].Values[1]),true, 10000);
+            if (IsProgressFirstIteration) {
+                IsProgressFirstIteration=false;
+                graph.addSeries(series);
+                graph.getViewport().setScalable(true);
+                graph.getViewport().setScalableY(true);
+                graph.getViewport().setScrollable(true);
+                graph.getViewport().setScrollableY(true);
+                graph.getViewport().setMinX(0);
+                graph.getViewport().setMaxX(5);
+            }
         }
 
+        @Override
         protected void onPostExecute(Integer result) {
+            //mSerialIoManager.stop();
+            //mExecutor.shutdown();
+            Toast.makeText(getApplicationContext(),
+                    "Waiting to exit...",
+                    Toast.LENGTH_SHORT).show();
+            while (!mExecutor.isShutdown()) {
+
+            }
             Toast.makeText(getApplicationContext(),
                     "Finished",
                     Toast.LENGTH_SHORT).show();
+            ChangeStateToNotSimulating();
+        }
+
+        protected void onCancelled() {
+            Toast.makeText(getApplicationContext(),
+                    "Cancelled...",
+                    Toast.LENGTH_SHORT).show();
+            //mSerialIoManager.stop();
+            //mExecutor.shutdown();
+            Toast.makeText(getApplicationContext(),
+                    "Waiting to exit...",
+                    Toast.LENGTH_SHORT).show();
+            while (!mExecutor.isShutdown()) {
+
+            }
+            Toast.makeText(getApplicationContext(),
+                    "Finished",
+                    Toast.LENGTH_SHORT).show();
+            ChangeStateToNotSimulating();
         }
         private Integer ConvertBytesToInt (byte LSB, byte MSB) {
             Integer val=0;

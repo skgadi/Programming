@@ -38,12 +38,11 @@
                     android:visibility="visible"
                     app:srcCompat="@drawable/pid" />
 
-                <com.github.mikephil.charting.charts.LineChart
-                    android:id="@+id/pid_chart0"
+                <com.jjoe64.graphview.GraphView
                     android:layout_width="match_parent"
-                    android:layout_height="500dp">
+                    android:layout_height="500dip"
+                    android:id="@+id/pid_chart00" />
 
-                </com.github.mikephil.charting.charts.LineChart>
             </LinearLayout>
 
             <LinearLayout
