@@ -3,6 +3,7 @@ package com.skgadi.controltoolbox;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.AsyncTask;
@@ -352,13 +353,16 @@ public class MainActivity extends AppCompatActivity {
     }
     private class SimulateAlgorithm extends AsyncTask <SimulateParams, ProgressParams, Integer> {
         UsbSerialPort port;
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
+        LineGraphSeries<DataPoint> GraphSeries0 = new LineGraphSeries<>();
+        LineGraphSeries<DataPoint> GraphSeries1 = new LineGraphSeries<>();
+        LineGraphSeries<DataPoint> GraphSeries2 = new LineGraphSeries<>();
 
         boolean IsProgressFirstIteration=true;
         DataPoint[] DataPoints;
         float[] RecData = new float[3];
         int readCount=0;
         boolean isValidRead=false;
+        String PrevString="";
         int readSize = 0;
 
 
@@ -384,44 +388,75 @@ public class MainActivity extends AppCompatActivity {
                     }
                 };
         private void DataRecUpdate (byte[] data) {
-            String Rec = new String(data);
-            Log.i("USBRec", Rec);
-            String[] RecStrs = Rec.split(";");
-            if (RecStrs.length == 3) {
+            String Rec = PrevString + new String(data);
+            /*Log.i("USBRec", "Received String" + Rec);
+            Log.i("USBRec", "Last Digit"+Rec.substring(Rec.length()-1));*/
+            if (Rec.substring(Rec.length()-1).contentEquals("E")) {
                 isValidRead = true;
-                for (int i = 0; i < RecStrs.length; i++) {
-                    if (RecStrs.length > i)
-                        RecData[i] = Float.parseFloat(RecStrs[i]);
+                PrevString = "";
+                Rec = Rec.substring(0, Rec.length()-1);
+                //Log.i("USBRec", "Received String with validation" + Rec);
+                String[] RecStrs = Rec.split(";");
+                for (int i=0; i<RecStrs.length; i++) {
+                    RecData[i] = Float.parseFloat(RecStrs[i]);
                 }
-            }
-            readCount++;
+                /*Log.i("USBRec", "Size: "+RecStrs.length);
+                Log.i("USBRec", RecStrs [0]);
+                Log.i("USBRec", RecStrs [1]);
+                Log.i("USBRec", RecStrs [2]);*/
+            } else
+                PrevString = Rec;
+            //readCount++;
+        }
+        private void DataRecUpdateForHex (byte[] data) {
+
+
+            for (int i=0; i<data.length; i++)
+                Log.i("USBRec", String.format("Before prepending: %02X", data[i]));
+            String Rec = PrevString + new String(data);
+
+
+            for (int i=0; i<Rec.length(); i++)
+                Log.i("USBRec", String.format("After prepending: %02X", Rec.getBytes()[i]));
+
+            if ((Rec.length()==7) && (Rec.substring(Rec.length()-1).contentEquals("E"))) {
+                isValidRead = true;
+                PrevString = "";
+                for (int i=0; i<3; i++) {
+                    RecData[i] = ConvertBytesToInt(Rec.getBytes()[i+2],Rec.getBytes()[i + 1]);
+                }
+            } else
+                PrevString = Rec;
         }
 
         @Override
         protected Integer doInBackground(SimulateParams... Params) {
-            float[] PValues = new float[2];
+            float[] PValues = new float[6];
             //series = new LineGraphSeries<DataPoint>();
             DataPoints = new DataPoint[1000];
 
             ProgressParams PParams = new ProgressParams(PValues);
             port = Params[0].Port;
 
-            //mSerialIoManager = new SerialInputOutputManager(port, mListener);
-            //mExecutor.submit(mSerialIoManager);
-
             try {
                 port.purgeHwBuffers(true, true);
+                Thread.sleep(100);
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            mSerialIoManager = new SerialInputOutputManager(port, mListener);
+            mExecutor.submit(mSerialIoManager);
             long StartTime = System.currentTimeMillis();
             int PresentItem=0;
             byte[] ReadBuff = new byte[20];
             while(!this.isCancelled()) {
                 try {
+                    //mSerialIoManager.writeAsync("He".getBytes());
                     port.write("00".getBytes(),1);
-                    port.read(ReadBuff, 1);
-                    DataRecUpdate(ReadBuff);
+                    //port.read(ReadBuff, 1);
+                    //DataRecUpdate(ReadBuff);
+                    Thread.sleep(1);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -429,32 +464,53 @@ public class MainActivity extends AppCompatActivity {
                 do {
                     if (isValidRead) {
                         isValidRead  = false;
+                        RecedData = true;
                         PValues[0]  = (System.currentTimeMillis()-StartTime)/1000.0f;
                         PValues[1] = RecData[0];
+                        PValues[2]  = (System.currentTimeMillis()-StartTime)/1000.0f;
+                        PValues[3] = RecData[1];
+                        PValues[4]  = (System.currentTimeMillis()-StartTime)/1000.0f;
+                        PValues[5] = RecData[2];
                         publishProgress(PParams);
                         PresentItem++;
                     }
-                } while ((((System.currentTimeMillis()-StartTime))%10) != 0);
-            }
+                } while ((((System.currentTimeMillis() - StartTime))%15) != 0);
+                if (RecedData)
+                    Log.i("Timing", String.valueOf(PValues[0]));
+            }/**/
             return null;
         }
 
         @Override
         protected void onProgressUpdate(ProgressParams... Params) {
             GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
-            series.appendData(new DataPoint(Params[0].Values[0],Params[0].Values[1]),true, 10000);
+            GraphSeries0.appendData(new DataPoint(Params[0].Values[0], Params[0].Values[1]), true, 10000);
+            GraphSeries1.appendData(new DataPoint(Params[0].Values[2], Params[0].Values[3]), true, 10000);
+            GraphSeries2.appendData(new DataPoint(Params[0].Values[4], Params[0].Values[5]), true, 10000);
             if (IsProgressFirstIteration) {
                 IsProgressFirstIteration=false;
-                graph.addSeries(series);
+                graph.addSeries(GraphSeries0);
+                graph.addSeries(GraphSeries1);
+                graph.addSeries(GraphSeries2);
                 graph.getViewport().setScalable(true);
                 graph.getViewport().setScalableY(true);
                 graph.getViewport().setScrollable(true);
                 graph.getViewport().setScrollableY(true);
                 graph.getViewport().setMinX(0);
-                graph.getViewport().setMaxX(5);
+                graph.getViewport().setMaxX(2);
             }
         }
 
+        @Override
+        protected void onPreExecute () {
+            GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
+            graph.removeAllSeries();
+            IsProgressFirstIteration = true;
+            GraphSeries0.setColor(Color.parseColor("#ff0000"));
+            GraphSeries1.setColor(Color.parseColor("#00ff00"));
+            GraphSeries2.setColor(Color.parseColor("#0000ff"));
+
+        }
         @Override
         protected void onPostExecute(Integer result) {
             //mSerialIoManager.stop();
@@ -475,8 +531,11 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(),
                     "Cancelled...",
                     Toast.LENGTH_SHORT).show();
-            //mSerialIoManager.stop();
-            //mExecutor.shutdown();
+            if (mSerialIoManager != null) {
+                mSerialIoManager.stop();
+                mSerialIoManager = null;
+            }
+            mExecutor.shutdown();
             Toast.makeText(getApplicationContext(),
                     "Waiting to exit...",
                     Toast.LENGTH_SHORT).show();
@@ -490,13 +549,10 @@ public class MainActivity extends AppCompatActivity {
         }
         private Integer ConvertBytesToInt (byte LSB, byte MSB) {
             Integer val=0;
+            if ((MSB & 0x80) == 0x80)
+                val = -1;
             val = val | LSB ;
             val = val | ((int) MSB<<8) ;
-            if ((MSB & 0x80) > 0) {
-                for (int i=0; i< (Integer.BYTES-2); i++) {
-                    val = val | (0xff<<8*(i+1));
-                }
-            }
             return val;
         }
     }
