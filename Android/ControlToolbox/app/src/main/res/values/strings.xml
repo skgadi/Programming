@@ -6,6 +6,7 @@
     <string name="BUTTON_IDENIFICATION2">Second order identification</string>
     <string-array name="SCREENS_LIST">
         <item>Main window</item>
+        <item>Settings</item>
         <item>PID Controller</item>
         <item>Zero order identification</item>
         <item>First order identification</item>
@@ -26,8 +27,9 @@
         <item>Device is successfully disconnected.</item>
         <item>Unknown error. Detach, re-attach the device to fix the problem.</item>
         <item>Your android device is not having OTG enabled.</item>
-        <item>Simulation is disabled: Either your device is not connected or you are in a wrong window.</item>
-        <item>You cannot exit to the Main Menu while the simulation is running. Stop the simulation before proceeding to the main menu.</item>
+        <item>Simulation not available: No model is available in this window simulate.</item>
+        <item>You cannot exit to the Main menu while the simulation is running. Stop the simulation before proceeding to the main menu.</item>
+        <item>You cannot change settings while simulation is running.</item>
         <item></item>
     </string-array>
 

@@ -43,6 +43,7 @@ import java.util.concurrent.Executors;
 
 
 enum SCREENS {
+    SETTINGS,
     MAIN_SCREEN,
     PID,
     IDENTIFICATION0,
@@ -62,7 +63,8 @@ public class MainActivity extends AppCompatActivity {
     public LineChart chart;
     private LinearLayout.LayoutParams DefaultLayoutParams;
     private LinearLayout[] Screens;
-    SCREENS PresentScreen;
+    SCREENS PresentScreen = SCREENS.MAIN_SCREEN;
+    SCREENS PreviousScreen;
     private boolean CloseApp;
     protected String[] ScreensList;
     MenuItem SettingsButton;
@@ -102,6 +104,8 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(),
                         getResources().getStringArray(R.array.TOASTS)[0],
                         Toast.LENGTH_SHORT).show();
+            } else if (PresentScreen == SCREENS.SETTINGS) {
+                SetScreenTo(PreviousScreen);
             } else {
                 SetScreenTo(SCREENS.MAIN_SCREEN);
             }
@@ -117,11 +121,12 @@ public class MainActivity extends AppCompatActivity {
 
         //--- Var vals
         Screens = new LinearLayout[SCREENS.values().length];
-        Screens[0] = (LinearLayout) findViewById(R.id.Main);
-        Screens[1] = (LinearLayout) findViewById(R.id.PID);
-        Screens[2] = (LinearLayout) findViewById(R.id.IDENTIFICATION0);
-        Screens[3] = (LinearLayout) findViewById(R.id.IDENTIFICATION1);
-        Screens[4] = (LinearLayout) findViewById(R.id.IDENTIFICATION2);
+        Screens[0] = (LinearLayout) findViewById(R.id.Settings);
+        Screens[1] = (LinearLayout) findViewById(R.id.Main);
+        Screens[2] = (LinearLayout) findViewById(R.id.PID);
+        Screens[3] = (LinearLayout) findViewById(R.id.IDENTIFICATION0);
+        Screens[4] = (LinearLayout) findViewById(R.id.IDENTIFICATION1);
+        Screens[5] = (LinearLayout) findViewById(R.id.IDENTIFICATION2);
         DefaultLayoutParams =  new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.FILL_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -129,12 +134,12 @@ public class MainActivity extends AppCompatActivity {
         //--- Add buttons
         ScreensList = getResources().getStringArray(R.array.SCREENS_LIST);
         Button ButtonForMainScreen;
-        for (int i=1; i<ScreensList.length; i++) {
+        for (int i=2; i<ScreensList.length; i++) {
             ButtonForMainScreen = new Button(this);
             ButtonForMainScreen.setText(ScreensList[i]);
             ButtonForMainScreen.setLayoutParams(DefaultLayoutParams);
             ButtonForMainScreen.setOnClickListener(new OnMainWindowButton(i));
-            Screens[0].addView(ButtonForMainScreen);
+            Screens[SCREENS.MAIN_SCREEN.ordinal()].addView(ButtonForMainScreen);
         }
 
         //--- USB related initialization
@@ -145,14 +150,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void SetScreenTo (SCREENS Screen) {
+        PreviousScreen = PresentScreen;
         for (int i=0; i<SCREENS.values().length; i++)
             Screens[i].setVisibility(View.GONE);
         PresentScreen = Screen;
         Screens[PresentScreen.ordinal()].setVisibility(View.VISIBLE);
-        if (Screen != SCREENS.MAIN_SCREEN)
-            ChangeStateToNotSimulating();
-        else
+        if ((Screen == SCREENS.MAIN_SCREEN) || (Screen == SCREENS.SETTINGS))
             ChangeStateToSimulateDisabled();
+        else
+            ChangeStateToNotSimulating();
     }
 
     public class OnMainWindowButton implements View.OnClickListener {
@@ -177,6 +183,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.settings:
+                if (SimulationState == SIMULATION_STATUS.ON)
+                    Toast.makeText(MainActivity.this,
+                            getResources().getStringArray(R.array.TOASTS)[10],
+                            Toast.LENGTH_SHORT).show();
+                else
+                SetScreenTo(SCREENS.SETTINGS);
+                break;
             case R.id.simulate:
                 if(SimulationState == SIMULATION_STATUS.ON) {
                     SimHandle.cancel(true);
@@ -201,20 +215,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-    void SetProperSimulateButtonStatus () {
-        if (!DeviceConnected || PresentScreen == SCREENS.MAIN_SCREEN) {
-            ChangeStateToSimulateDisabled();
-        } else {
-            if (SimulationState == SIMULATION_STATUS.ON) {
-                ChangeStateToSimulating();
-            } else {
-                ChangeStateToNotSimulating();
-            }
-        }
-    }
-    void StopSimulation () {
-
-    }
     void ChangeStateToSimulateDisabled () {
         SimulationState = SIMULATION_STATUS.DISABLED;
         SimulateButton.setIcon(R.drawable.icon_simulate_disabled);
@@ -222,10 +222,12 @@ public class MainActivity extends AppCompatActivity {
     void ChangeStateToSimulating () {
         SimulationState = SIMULATION_STATUS.ON;
         SimulateButton.setIcon(R.drawable.icon_simulate_stop);
+        SettingsButton.setIcon(R.drawable.icon_settings_disabled);
     }
     void ChangeStateToNotSimulating () {
         SimulationState = SIMULATION_STATUS.OFF;
         SimulateButton.setIcon(R.drawable.icon_simulate_start);
+        SettingsButton.setIcon(R.drawable.icon_settings);
     }
     //--- USB Programming
     private int ConnectUSB () {
