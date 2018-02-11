@@ -11,6 +11,7 @@
         <item>First order identification</item>
         <item>Second order identification</item>
     </string-array>
+    <string name="BUTTON_SETTINGS">Settings</string>
 
 
 

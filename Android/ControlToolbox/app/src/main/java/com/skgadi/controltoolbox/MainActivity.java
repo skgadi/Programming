@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
     SCREENS PresentScreen;
     private boolean CloseApp;
     protected String[] ScreensList;
-    MenuItem ConnectButton;
+    MenuItem SettingsButton;
     MenuItem SimulateButton;
 
 
@@ -149,29 +149,11 @@ public class MainActivity extends AppCompatActivity {
             Screens[i].setVisibility(View.GONE);
         PresentScreen = Screen;
         Screens[PresentScreen.ordinal()].setVisibility(View.VISIBLE);
-        SetProperSimulateButtonStatus();
-        /*switch (Screen){
-            case MAIN_SCREEN:
-                break;
-            case PID:
-                break;
-            case IDENTIFICATION0:
-                break;
-            case IDENTIFICATION1:
-                break;
-            case IDENTIFICATION2:
-                break;
-            default:
-                break;
-        }
-        setTitle(getResources().getString(R.string.app_name)
-                + ": "
-                +ScreensList[PresentScreen]);
-        Toast.makeText(getApplicationContext(), ScreensList[PresentScreen], Toast.LENGTH_SHORT).show();
-        */
+        if (Screen != SCREENS.MAIN_SCREEN)
+            ChangeStateToNotSimulating();
+        else
+            ChangeStateToSimulateDisabled();
     }
-
-
 
     public class OnMainWindowButton implements View.OnClickListener {
         int ScreenNumber;
@@ -188,19 +170,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.con_sim_menu, menu);
-        ConnectButton = menu.getItem(0);
+        SettingsButton = menu.getItem(0);
         SimulateButton = menu.getItem(1);
         return super.onCreateOptionsMenu(menu);
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.connect:
-                if (DeviceConnected)
-                    DisconnectUSB();
-                else
-                    ConnectUSB();
-                break;
             case R.id.simulate:
                 if(SimulationState == SIMULATION_STATUS.ON) {
                     SimHandle.cancel(true);
@@ -211,13 +187,15 @@ public class MainActivity extends AppCompatActivity {
                             Toast.LENGTH_SHORT).show();
                 }
                 if (SimulationState == SIMULATION_STATUS.OFF) {
-                    ChangeStateToSimulating();
-                    SimulateParams SParams = new SimulateParams(port, PresentScreen);
-                    SimHandle = new SimulateAlgorithm();
-                    SimHandle.execute(SParams);
-                    Toast.makeText(MainActivity.this,
-                            "started simulating",
-                            Toast.LENGTH_SHORT).show();
+                    if (ConnectUSB() == 2) {
+                        ChangeStateToSimulating();
+                        SimulateParams SParams = new SimulateParams(port, PresentScreen);
+                        SimHandle = new SimulateAlgorithm();
+                        SimHandle.execute(SParams);
+                        Toast.makeText(MainActivity.this,
+                                "started simulating",
+                                Toast.LENGTH_SHORT).show();
+                    }
                 }
                 break;
         }
@@ -236,16 +214,6 @@ public class MainActivity extends AppCompatActivity {
     }
     void StopSimulation () {
 
-    }
-    void ChangeStateToConnected () {
-        DeviceConnected = true;
-        ConnectButton.setIcon(R.drawable.icon_disconnect);
-        SetProperSimulateButtonStatus ();
-    }
-    void ChangeStateToDisconnected () {
-        DeviceConnected = false;
-        ConnectButton.setIcon(R.drawable.icon_connect);
-        SetProperSimulateButtonStatus();
     }
     void ChangeStateToSimulateDisabled () {
         SimulationState = SIMULATION_STATUS.DISABLED;
@@ -269,14 +237,12 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this,
                     getResources().getStringArray(R.array.TOASTS)[7],
                     Toast.LENGTH_SHORT).show();
-            ChangeStateToDisconnected();
             return 0;
         }
         if (drivers.isEmpty()) {
             Toast.makeText(MainActivity.this,
                     getResources().getStringArray(R.array.TOASTS)[1],
                     Toast.LENGTH_SHORT).show();
-            ChangeStateToDisconnected();
             return 0;
         }
         driver = drivers.get(0);
@@ -293,7 +259,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this,
                     getResources().getStringArray(R.array.TOASTS)[2],
                     Toast.LENGTH_SHORT).show();
-            ChangeStateToDisconnected();
             return 1;
         }
         port = driver.getPorts().get(0);
@@ -306,14 +271,12 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this,
                     getResources().getStringArray(R.array.TOASTS)[3],
                     Toast.LENGTH_SHORT).show();
-            ChangeStateToConnected();
             return 2;
         } catch (IOException e) {
             Toast.makeText(MainActivity.this,
                     getResources().getStringArray(R.array.TOASTS)[4],
                     Toast.LENGTH_SHORT).show();
             e.printStackTrace();
-            ChangeStateToDisconnected();
             return 0;
         }
     }
@@ -323,13 +286,11 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this,
                     getResources().getStringArray(R.array.TOASTS)[5],
                     Toast.LENGTH_SHORT).show();
-            ChangeStateToDisconnected();
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(MainActivity.this,
                     getResources().getStringArray(R.array.TOASTS)[6],
                     Toast.LENGTH_SHORT).show();
-            ChangeStateToDisconnected();
         }
     }
 
@@ -497,7 +458,7 @@ public class MainActivity extends AppCompatActivity {
                 graph.getViewport().setScrollable(true);
                 graph.getViewport().setScrollableY(true);
                 graph.getViewport().setMinX(0);
-                graph.getViewport().setMaxX(2);
+                graph.getViewport().setMaxX(10);
             }
         }
 
@@ -542,6 +503,7 @@ public class MainActivity extends AppCompatActivity {
             while (!mExecutor.isShutdown()) {
 
             }
+            DisconnectUSB();
             Toast.makeText(getApplicationContext(),
                     "Finished",
                     Toast.LENGTH_SHORT).show();
