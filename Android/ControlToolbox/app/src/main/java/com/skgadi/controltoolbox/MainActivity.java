@@ -9,34 +9,27 @@ import android.hardware.usb.UsbManager;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.InputFilter;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.hoho.android.usbserial.driver.CdcAcmSerialDriver;
 import com.hoho.android.usbserial.driver.ProbeTable;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.series.BarGraphSeries;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,7 +56,8 @@ public class MainActivity extends AppCompatActivity {
     public LineChart chart;
     private LinearLayout.LayoutParams DefaultLayoutParams;
     private LinearLayout[] Screens;
-    SCREENS PresentScreen = SCREENS.MAIN_SCREEN;
+    SCREENS PresentScreen = SCREENS.MAIN_SCREEN
+            ;
     SCREENS PreviousScreen;
     private boolean CloseApp;
     protected String[] ScreensList;
@@ -118,6 +112,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //--- Add filters to buttons
+
 
         //--- Var vals
         Screens = new LinearLayout[SCREENS.values().length];
@@ -189,7 +186,8 @@ public class MainActivity extends AppCompatActivity {
                             getResources().getStringArray(R.array.TOASTS)[10],
                             Toast.LENGTH_SHORT).show();
                 else
-                SetScreenTo(SCREENS.SETTINGS);
+                    if (PresentScreen != SCREENS.SETTINGS)
+                        SetScreenTo(SCREENS.SETTINGS);
                 break;
             case R.id.simulate:
                 if(SimulationState == SIMULATION_STATUS.ON) {
@@ -251,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
         connection = manager.openDevice(driver.getDevice());
         if (connection == null) {
             // You probably need to call UsbManager.requestPermission(driver.getDevice(), ..)
-            String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
+            String ACTION_USB_PERMISSION = "com.skgadi.controltoolbox.USB_PERMISSION";
             PendingIntent mPermissionIntent =
                     PendingIntent.getBroadcast(MainActivity.this,
                             0,
@@ -323,10 +321,10 @@ public class MainActivity extends AppCompatActivity {
         boolean IsProgressFirstIteration=true;
         DataPoint[] DataPoints;
         float[] RecData = new float[3];
-        int readCount=0;
         boolean isValidRead=false;
         String PrevString="";
-        int readSize = 0;
+        boolean Purged = false;
+        int MissedTicks = 0;
 
 
         private ExecutorService mExecutor = Executors.newSingleThreadExecutor();
@@ -336,7 +334,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onRunError(Exception e) {
-                        //Log.d(TAG, "Runner stopped.");
+                        //Log.d("USBRec", "Runner stopped.");
                     }
 
                     @Override
@@ -350,15 +348,24 @@ public class MainActivity extends AppCompatActivity {
                         });*/
                     }
                 };
+        private void PurgeReceivedBuffer() {
+            try {
+                Thread.sleep(10);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            Purged = true;
+        }
         private void DataRecUpdate (byte[] data) {
+            //Log.i("USBRec", "Previous String: " + PrevString);
             String Rec = PrevString + new String(data);
-            /*Log.i("USBRec", "Received String" + Rec);
+            /*Log.i("USBRec", "Received String: " + Rec);
             Log.i("USBRec", "Last Digit"+Rec.substring(Rec.length()-1));*/
-            if (Rec.substring(Rec.length()-1).contentEquals("E")) {
+            if (Rec.substring(Rec.length()-1).contains("E")) {
                 isValidRead = true;
                 PrevString = "";
-                Rec = Rec.substring(0, Rec.length()-1);
-                //Log.i("USBRec", "Received String with validation" + Rec);
+                Rec = Rec.substring(0, Rec.indexOf("E"));
+                //Log.i("USBRec", "Received String with validation: " + Rec);
                 String[] RecStrs = Rec.split(";");
                 for (int i=0; i<RecStrs.length; i++) {
                     RecData[i] = Float.parseFloat(RecStrs[i]);
@@ -367,13 +374,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("USBRec", RecStrs [0]);
                 Log.i("USBRec", RecStrs [1]);
                 Log.i("USBRec", RecStrs [2]);*/
-            } else
+            } else if (Purged)
                 PrevString = Rec;
             //readCount++;
         }
         private void DataRecUpdateForHex (byte[] data) {
-
-
             for (int i=0; i<data.length; i++)
                 Log.i("USBRec", String.format("Before prepending: %02X", data[i]));
             String Rec = PrevString + new String(data);
@@ -401,28 +406,14 @@ public class MainActivity extends AppCompatActivity {
             ProgressParams PParams = new ProgressParams(PValues);
             port = Params[0].Port;
 
-            try {
-                port.purgeHwBuffers(true, true);
-                Thread.sleep(100);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
             mSerialIoManager = new SerialInputOutputManager(port, mListener);
             mExecutor.submit(mSerialIoManager);
+            PurgeReceivedBuffer();
+
             long StartTime = System.currentTimeMillis();
             int PresentItem=0;
             byte[] ReadBuff = new byte[20];
             while(!this.isCancelled()) {
-                try {
-                    //mSerialIoManager.writeAsync("He".getBytes());
-                    port.write("00".getBytes(),1);
-                    //port.read(ReadBuff, 1);
-                    //DataRecUpdate(ReadBuff);
-                    Thread.sleep(1);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
                 boolean RecedData = false;
                 do {
                     if (isValidRead) {
@@ -437,9 +428,21 @@ public class MainActivity extends AppCompatActivity {
                         publishProgress(PParams);
                         PresentItem++;
                     }
-                } while ((((System.currentTimeMillis() - StartTime))%15) != 0);
+                } while ((((System.currentTimeMillis() - StartTime))%10) != 0);
                 if (RecedData)
                     Log.i("Timing", String.valueOf(PValues[0]));
+
+                try {
+                    port.write("00".getBytes(),10);
+                    //Thread.sleep(1);
+                    MissedTicks=0;
+                } catch (Exception e) {
+                    Log.i("USBRec", "Error found");
+                    e.printStackTrace();
+                    if (++MissedTicks >=5) {
+                        this.cancel(true);
+                    }
+                }
             }/**/
             return null;
         }
@@ -447,9 +450,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(ProgressParams... Params) {
             GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
-            GraphSeries0.appendData(new DataPoint(Params[0].Values[0], Params[0].Values[1]), true, 10000);
-            GraphSeries1.appendData(new DataPoint(Params[0].Values[2], Params[0].Values[3]), true, 10000);
-            GraphSeries2.appendData(new DataPoint(Params[0].Values[4], Params[0].Values[5]), true, 10000);
+            GraphSeries0.appendData(new DataPoint(Params[0].Values[0], Params[0].Values[1]), true, 1000);
+            GraphSeries1.appendData(new DataPoint(Params[0].Values[2], Params[0].Values[3]), true, 1000);
+            GraphSeries2.appendData(new DataPoint(Params[0].Values[4], Params[0].Values[5]), true, 1000);
             if (IsProgressFirstIteration) {
                 IsProgressFirstIteration=false;
                 graph.addSeries(GraphSeries0);
@@ -476,8 +479,6 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override
         protected void onPostExecute(Integer result) {
-            //mSerialIoManager.stop();
-            //mExecutor.shutdown();
             Toast.makeText(getApplicationContext(),
                     "Waiting to exit...",
                     Toast.LENGTH_SHORT).show();

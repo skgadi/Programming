@@ -13,6 +13,7 @@
         <item>Second order identification</item>
     </string-array>
     <string name="BUTTON_SETTINGS">Settings</string>
+    <string name="TEXT_SAMPLING_TIME">Sampling time in milli seconds</string>
 
 
 
@@ -30,6 +31,7 @@
         <item>Simulation not available: No model is available in this window simulate.</item>
         <item>You cannot exit to the Main menu while the simulation is running. Stop the simulation before proceeding to the main menu.</item>
         <item>You cannot change settings while simulation is running.</item>
+        <item>This is not a valid integer number. Enter a number in the range</item>
         <item></item>
     </string-array>
 
