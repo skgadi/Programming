@@ -1,22 +1,25 @@
 package com.skgadi.controltoolbox;
 
 import android.app.PendingIntent;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.InputFilter;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
@@ -28,7 +31,9 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
+import com.warkiz.widget.IndicatorSeekBar;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -36,8 +41,8 @@ import java.util.concurrent.Executors;
 
 
 enum SCREENS {
-    SETTINGS,
     MAIN_SCREEN,
+    SETTINGS,
     PID,
     IDENTIFICATION0,
     IDENTIFICATION1,
@@ -63,6 +68,23 @@ public class MainActivity extends AppCompatActivity {
     protected String[] ScreensList;
     MenuItem SettingsButton;
     MenuItem SimulateButton;
+
+
+    //--- Database Related
+    SQLiteDatabase GSK_Database;
+    String DatabaseName = "gsk_settings.db";
+    //--- Settings Related
+    Integer[] SettingsDefault = {
+            100, 100, 10
+    };
+    Integer[][] SettingsLimits = {
+            {10, 1000}, {10, 10000}, {1, 100}
+    };
+    Integer[] PreviousSettings = {
+            0, 0, 0
+    };
+    String[] SettingsDBColumns = {"SamplingTime", "ChartHistoryLength", "ChartWindowLength"};
+    IndicatorSeekBar[] SettingsSeekBars;
 
 
     //----- Communication and other from prev program
@@ -99,7 +121,9 @@ public class MainActivity extends AppCompatActivity {
                         getResources().getStringArray(R.array.TOASTS)[0],
                         Toast.LENGTH_SHORT).show();
             } else if (PresentScreen == SCREENS.SETTINGS) {
-                SetScreenTo(PreviousScreen);
+                Toast.makeText(MainActivity.this,
+                        getResources().getStringArray(R.array.TOASTS)[12],
+                        Toast.LENGTH_SHORT).show();
             } else {
                 SetScreenTo(SCREENS.MAIN_SCREEN);
             }
@@ -113,13 +137,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //--- Add filters to buttons
-
-
+        //--- Database
+        ConnectToDatabase();
+        //--- Generate Settings window
+        GenerateSettingsView ();
         //--- Var vals
         Screens = new LinearLayout[SCREENS.values().length];
-        Screens[0] = (LinearLayout) findViewById(R.id.Settings);
-        Screens[1] = (LinearLayout) findViewById(R.id.Main);
+        Screens[0] = (LinearLayout) findViewById(R.id.Main);
+        Screens[1] = (LinearLayout) findViewById(R.id.Settings);
         Screens[2] = (LinearLayout) findViewById(R.id.PID);
         Screens[3] = (LinearLayout) findViewById(R.id.IDENTIFICATION0);
         Screens[4] = (LinearLayout) findViewById(R.id.IDENTIFICATION1);
@@ -138,12 +163,131 @@ public class MainActivity extends AppCompatActivity {
             ButtonForMainScreen.setOnClickListener(new OnMainWindowButton(i));
             Screens[SCREENS.MAIN_SCREEN.ordinal()].addView(ButtonForMainScreen);
         }
+    }
 
-        //--- USB related initialization
-        /*customTable = new ProbeTable();
-        //customTable.addProduct(0x4D8, 0x000A, CdcAcmSerialDriver.class);
-        customTable.addProduct(0x2341, 0x43, CdcAcmSerialDriver.class);
-        prober = new UsbSerialProber(customTable);*/ // Not required for arduino
+    private void GenerateSettingsView () {
+        TextView TempTextView;
+        SettingsSeekBars = new IndicatorSeekBar[3];
+        for (int i=SettingsDefault.length-1; i>=0; i--) {
+            TempTextView = new TextView(getApplicationContext());
+            TempTextView.setText(getResources().getStringArray(R.array.SETTINGS_WINDOW)[i]);
+            TempTextView.setTypeface(null, Typeface.BOLD);
+            SettingsSeekBars[i] = new IndicatorSeekBar.Builder(getApplicationContext())
+                    .setMin(SettingsLimits[i][0])
+                    .setMax(SettingsLimits[i][1])
+                    .thumbProgressStay(true)
+                    .build();
+            ((LinearLayout) findViewById(R.id.Settings)).addView(SettingsSeekBars[i],0);
+            ((LinearLayout) findViewById(R.id.Settings)).addView(TempTextView,0);
+        }
+        ChangeSettingsPositionsTo(ReadSettingsFromDatabase());
+    }
+
+    private void ChangeSettingsPositionsTo (Integer[] Values) {
+        for (int i=0; i< SettingsDefault.length; i++) {
+            Log.i("DBaseStuff", "Got " + Values[i]);
+            SettingsSeekBars[i].setProgress(Values[i]);
+        }
+    }
+
+    private Integer[] ReadSettingsPositions () {
+        Integer[] Values = new Integer[SettingsDefault.length];
+        for (int i=0; i< SettingsDefault.length; i++)
+            Values[i] = SettingsSeekBars[i].getProgress();
+        return Values;
+
+    }
+
+    private void WriteSettingsToDatabase (Integer[] Values) {
+        ContentValues data;
+        data = new ContentValues();
+        //Log.i("DBaseStuff", "Got " + Values[0]);
+        data.put("Key", 1);
+        for (int i=0; i<SettingsDefault.length; i++)
+            data.put (SettingsDBColumns[i], Values[i]);
+        Cursor TempCursor;
+        TempCursor = GSK_Database.rawQuery("SELECT * FROM `Settings`", null);
+        if (TempCursor.moveToFirst())
+            GSK_Database.update("Settings", data, "Key == 1" ,null);
+        else {
+            GSK_Database.insert("Settings", null, data);
+            WriteSettingsToDatabase(SettingsDefault);
+        }
+        TempCursor.close();
+
+    }
+
+    private Integer[] ReadSettingsFromDatabase () {
+        Integer[] Values = new Integer[SettingsDefault.length];
+        Cursor TempCursor;
+        TempCursor = GSK_Database.rawQuery("SELECT * FROM `Settings`", null);
+        Log.i("DBaseStuff", "Cursor count: " + TempCursor.getCount());
+        if (TempCursor.moveToFirst()) {
+            Log.i("DBaseStuff", "Got raw query For Key:"
+                    + TempCursor.getInt(TempCursor.getColumnIndex("Key")));
+
+            for (int i=0; i<SettingsDefault.length; i++)
+                Values[i] = TempCursor.getInt(TempCursor.getColumnIndex(SettingsDBColumns[i]));
+        } else {
+            Log.i("DBaseStuff", "No raw query");
+            CreateAandPopulateRecordForSettingsTable();
+        }
+        return Values;
+    }
+    public void SettingsSave (View v) {
+        WriteSettingsToDatabase(ReadSettingsPositions());
+        SetScreenTo(PreviousScreen);
+    }
+
+    public void SettingsReset (View v) {
+        ChangeSettingsPositionsTo(SettingsDefault);
+    }
+
+    public void SettingsResetNSave (View v) {
+        ChangeSettingsPositionsTo(SettingsDefault);
+        SettingsSave(v);
+    }
+
+    public void SettingsCancel (View v) {
+        ChangeSettingsPositionsTo(ReadSettingsFromDatabase());
+        SetScreenTo(PreviousScreen);
+    }
+
+    private void ConnectToDatabase () {
+        GSK_Database = getApplicationContext().openOrCreateDatabase(DatabaseName ,
+                MODE_PRIVATE, null);
+        if (GSK_Database.isOpen()) {
+            Log.i("DBaseStuff", "Database Opened");
+            if (isTableExists(GSK_Database, "Settings"))
+                Log.i("DBaseStuff", "Table is found");
+            else {
+                Log.i("DBaseStuff", "Table does not exist");
+                CreateAandPopulateRecordForSettingsTable();
+            }
+        } else
+            Log.i("DBaseStuff", "Unable to open Database");
+    }
+
+    private void CreateAandPopulateRecordForSettingsTable () {
+        String Query = "CREATE TABLE IF NOT EXISTS `Settings` (" +
+                "`Key`              INTEGER PRIMARY KEY ASC";
+        for (int i=0; i<SettingsDefault.length; i++)
+            Query += ", `" + SettingsDBColumns[i] + "`  INTEGER NOT NULL";
+        Query += ");";
+        //Log.i("DBaseStuff", "Query String: "+Query);
+        GSK_Database.execSQL(Query);
+        WriteSettingsToDatabase(SettingsDefault);
+    }
+    public boolean isTableExists(SQLiteDatabase mDatabase, String tableName) {
+        Cursor cursor = mDatabase.rawQuery("select DISTINCT tbl_name from sqlite_master where tbl_name = '"+tableName+"'", null);
+        if(cursor!=null) {
+            if(cursor.getCount()>0) {
+                cursor.close();
+                return true;
+            }
+            cursor.close();
+        }
+        return false;
     }
 
     private void SetScreenTo (SCREENS Screen) {
@@ -156,6 +300,12 @@ public class MainActivity extends AppCompatActivity {
             ChangeStateToSimulateDisabled();
         else
             ChangeStateToNotSimulating();
+        if (Screen == SCREENS.MAIN_SCREEN)
+            setTitle(getResources().getString(R.string.app_name));
+        else
+            setTitle(getResources().getString(R.string.app_name)
+                    + " >> "
+                    + getResources().getStringArray(R.array.SCREENS_LIST)[PresentScreen.ordinal()]);
     }
 
     public class OnMainWindowButton implements View.OnClickListener {

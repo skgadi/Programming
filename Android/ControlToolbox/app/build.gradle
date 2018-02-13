@@ -28,5 +28,5 @@ dependencies {
     implementation 'com.github.PhilJay:MPAndroidChart:v3.0.3'
     compile 'com.jjoe64:graphview:4.2.1'
     compile project(path: ':usbSerialForAndroid')
-    compile 'org.florescu.android.rangeseekbar:rangeseekbar-library:0.3.0'
+    compile 'com.github.warkiz.widget:indicatorseekbar:1.2.9'
 }

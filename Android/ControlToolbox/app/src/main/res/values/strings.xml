@@ -13,7 +13,15 @@
         <item>Second order identification</item>
     </string-array>
     <string name="BUTTON_SETTINGS">Settings</string>
-    <string name="TEXT_SAMPLING_TIME">Sampling time in milli seconds</string>
+    <string-array name="SETTINGS_WINDOW">
+        <item>Sampling time in milli seconds</item>
+        <item>Number of retained samples (Larger values may slowdown your device)</item>
+        <item>Window size of the graph</item>
+    </string-array>
+    <string name="BUTTON_SAVE">Save</string>
+    <string name="BUTTON_RESET">Reset to default values</string>
+    <string name="BUTTON_RESET_SAVE">Reset and Save</string>
+    <string name="BUTTON_CANCEL">Cancel</string>
 
 
 
@@ -32,6 +40,7 @@
         <item>You cannot exit to the Main menu while the simulation is running. Stop the simulation before proceeding to the main menu.</item>
         <item>You cannot change settings while simulation is running.</item>
         <item>This is not a valid integer number. Enter a number in the range</item>
+        <item>Please press any of the buttons to exit this window.</item>
         <item></item>
     </string-array>
 
