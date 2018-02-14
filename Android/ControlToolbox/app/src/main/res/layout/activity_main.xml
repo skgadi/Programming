@@ -22,37 +22,51 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <Button
-                    android:id="@+id/button"
+                <LinearLayout
+                    android:id="@+id/SettingsSeekBars"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:onClick="SettingsSave"
-                    android:text="@string/BUTTON_SAVE" />
+                    android:orientation="vertical"></LinearLayout>
 
-                <Button
-                    android:id="@+id/button3"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:onClick="SettingsCancel"
-                    android:text="@string/BUTTON_CANCEL" />
+                    android:orientation="vertical">
 
-                <Button
-                    android:id="@+id/button2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:onClick="SettingsReset"
-                    android:text="@string/BUTTON_RESET" />
+                    <Button
+                        android:id="@+id/button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:onClick="SettingsSave"
+                        android:text="@string/BUTTON_SAVE" />
 
-                <Button
-                    android:id="@+id/button5"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:onClick="SettingsResetNSave"
-                    android:text="@string/BUTTON_RESET_SAVE" />
+                    <Button
+                        android:id="@+id/button2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:onClick="SettingsReset"
+                        android:text="@string/BUTTON_RESET" />
+
+                    <Button
+                        android:id="@+id/button3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:onClick="SettingsCancel"
+                        android:text="@string/BUTTON_CANCEL" />
+
+                    <Button
+                        android:id="@+id/button5"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:onClick="SettingsResetNSave"
+                        android:text="@string/BUTTON_RESET_SAVE" />
+                </LinearLayout>
 
             </LinearLayout>
 

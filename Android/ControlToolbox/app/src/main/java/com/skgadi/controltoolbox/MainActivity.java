@@ -37,6 +37,7 @@ import com.jjoe64.graphview.series.LineGraphSeries;
 import com.warkiz.widget.IndicatorSeekBar;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,8 +64,8 @@ public class MainActivity extends AppCompatActivity {
     public LineChart chart;
     private LinearLayout.LayoutParams DefaultLayoutParams;
     private LinearLayout[] Screens;
-    SCREENS PresentScreen = SCREENS.MAIN_SCREEN
-            ;
+    SCREENS PresentScreen = SCREENS.MAIN_SCREEN;
+
     SCREENS PreviousScreen;
     private boolean CloseApp;
     protected String[] ScreensList;
@@ -86,15 +87,15 @@ public class MainActivity extends AppCompatActivity {
     String DatabaseName = "gsk_settings.db";
     //--- Settings Related
     Integer[] SettingsDefault = {
-            100, 100, 10
+            100, 100, 10, 200
     };
     Integer[][] SettingsLimits = {
-            {10, 1000}, {10, 10000}, {1, 100}
+            {10, 1000}, {10, 10000}, {1, 100}, {25, 1000}
     };
     Integer[] PreviousSettings = {
-            0, 0, 0
+            0, 0, 0, 0
     };
-    String[] SettingsDBColumns = {"SamplingTime", "ChartHistoryLength", "ChartWindowLength"};
+    String[] SettingsDBColumns = {"SamplingTime", "ChartHistoryLength", "ZoomXWindow", "ChartWindowHeight"};
     IndicatorSeekBar[] SettingsSeekBars;
 
 
@@ -151,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         //--- Database
+        //getApplicationContext().deleteDatabase(DatabaseName); // Use only to reset database while programming
         ConnectToDatabase();
         //--- Generate Settings window
         GenerateSettingsView ();
@@ -181,18 +183,27 @@ public class MainActivity extends AppCompatActivity {
 
     private void GenerateSettingsView () {
         TextView TempTextView;
-        SettingsSeekBars = new IndicatorSeekBar[3];
-        for (int i=SettingsDefault.length-1; i>=0; i--) {
+        SettingsSeekBars = new IndicatorSeekBar[SettingsDefault.length];
+        for (int i=0; i<SettingsDefault.length; i++) {
             TempTextView = new TextView(getApplicationContext());
-            TempTextView.setText(getResources().getStringArray(R.array.SETTINGS_WINDOW)[i]);
-            TempTextView.setTypeface(null, Typeface.BOLD);
+            if (getResources().getStringArray(R.array.SETTINGS_WINDOW)[i].contains(">>")) {
+                String[] TempTitles = getResources().getStringArray(R.array.SETTINGS_WINDOW)[i].split(">>");
+                TempTextView.setText(TempTitles[0]);
+                TempTextView.setTextSize(18);
+                TempTextView.setTypeface(null, Typeface.BOLD);
+                ((LinearLayout) findViewById(R.id.SettingsSeekBars)).addView(TempTextView);
+                TempTextView = new TextView(getApplicationContext());
+                TempTextView.setText(TempTitles[1]);
+            } else
+                TempTextView.setText(getResources().getStringArray(R.array.SETTINGS_WINDOW)[i]);
+            ((LinearLayout) findViewById(R.id.SettingsSeekBars)).addView(TempTextView);
             SettingsSeekBars[i] = new IndicatorSeekBar.Builder(getApplicationContext())
                     .setMin(SettingsLimits[i][0])
                     .setMax(SettingsLimits[i][1])
                     .thumbProgressStay(true)
                     .build();
-            ((LinearLayout) findViewById(R.id.Settings)).addView(SettingsSeekBars[i],0);
-            ((LinearLayout) findViewById(R.id.Settings)).addView(TempTextView,0);
+
+            ((LinearLayout) findViewById(R.id.SettingsSeekBars)).addView(SettingsSeekBars[i]);
         }
         ChangeSettingsPositionsTo(ReadSettingsFromDatabase());
     }
@@ -387,8 +398,14 @@ public class MainActivity extends AppCompatActivity {
             ModelGraphs[i].getViewport().setScrollable(true);
             ModelGraphs[i].getViewport().setScrollableY(true);
             ModelGraphs[i].getViewport().setMinX(0);
-            ModelGraphs[i].getViewport().setMaxX(ReadSettingsFromDatabase()[2]);
-            ModelGraphs[i].setMinimumHeight(200);
+            ModelGraphs[i].getViewport().setMaxX(
+                    ReadSettingsFromDatabase()[Arrays.asList(SettingsDBColumns)
+                            .indexOf("ZoomXWindow")
+                            ]);
+            ModelGraphs[i].setMinimumHeight(
+                    ReadSettingsFromDatabase()[Arrays.asList(SettingsDBColumns)
+                            .indexOf("ChartWindowHeight")
+                            ]);
             ModelView.addView(ModelGraphs[i]);
             TempTextView = new TextView(getApplicationContext());
             TempTextView.setText(getString(R.string.GRAPH_CAPTION) + " " + ((int)i+1) + ": "
@@ -403,7 +420,7 @@ public class MainActivity extends AppCompatActivity {
     private void PreparePIDModel() {
         Model = new SimulationView() {
             @Override
-            public float[] RunAlgorithms(float[] Parameters,
+            public float[] RunAlgorithms(float[] Parameters, float[] Generated,
                                          float[] In, float[] In1Delay, float[] In2Delay,
                                          float[] Out1Delay, float[] Out2Delay) {
                 float K_P = Parameters[0];
@@ -415,6 +432,16 @@ public class MainActivity extends AppCompatActivity {
                 float [] OutSignals = new float[1];
                 OutSignals[0] = Out1Delay[0] + a*In[0] + b*In1Delay[0] + c*In2Delay[0];
                 return OutSignals;
+            }
+
+            @Override
+            public float[] OutGraphSignals(float[] Generated, float[] In, float[] Out) {
+                float[] Trajectories = new float[4];
+                Trajectories[0] = Generated[0];
+                Trajectories[1] = In[0];
+                Trajectories[2] = Generated[0]-In[0];
+                Trajectories[3] = Out[0];
+                return Trajectories;
             }
         };
         Model.Images = new int[1];
@@ -437,7 +464,7 @@ public class MainActivity extends AppCompatActivity {
         Model.Parameters[0] = new Parameter("Controller parameters>>K_P", 0, 100, 1);
         Model.Parameters[1] = new Parameter("K_I", 0, 10, 1);
         Model.Parameters[2] = new Parameter("K_D", 0, 10, 0);
-        Model.T_S = ReadSettingsFromDatabase()[0];
+        Model.T_S = ReadSettingsFromDatabase()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")];
     }
     public class OnMainWindowButton implements View.OnClickListener {
         int ScreenNumber;

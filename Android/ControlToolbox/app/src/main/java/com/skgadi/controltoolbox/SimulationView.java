@@ -15,7 +15,8 @@ public abstract class SimulationView {
     public Figure Figures [];
     public Parameter[] Parameters;
     public float T_S;
-    public abstract float[] RunAlgorithms(float[] Parameters,
+    public abstract float[] RunAlgorithms(float[] Parameters, float[] Generated,
                                           float[] In, float[] In1Delay, float[] In2Delay,
                                           float[] Out1Delay, float[] Out2Delay);
+    public abstract float[] OutGraphSignals (float[] Generated, float[] In, float[] Out);
 }

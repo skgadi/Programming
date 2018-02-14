@@ -17,10 +17,10 @@
     </string-array>
     <string name="BUTTON_SETTINGS">Settings</string>
     <string-array name="SETTINGS_WINDOW">
-        <item>Sampling time in milli seconds</item>
-        <item>Number of retained samples (Larger values may slowdown your device)</item>
+        <item>Simulation settings>>Sampling time in milli seconds</item>
+        <item>Graph settings>>Number of retained samples (Larger values may slowdown your device)</item>
         <item>Default window zoom on the horizontal axis</item>
-        <item>Window's height for the figures</item>
+        <item>Window\'s height for the figures</item>
     </string-array>
     <string name="BUTTON_SAVE">Save</string>
     <string name="BUTTON_RESET">Reset to default values</string>
