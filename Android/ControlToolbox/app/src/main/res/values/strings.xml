@@ -4,6 +4,9 @@
     <string name="BUTTON_IDENIFICATION0">Zero order identification</string>
     <string name="BUTTON_IDENIFICATION1">First order identification</string>
     <string name="BUTTON_IDENIFICATION2">Second order identification</string>
+    <string name="SAMPLING_TIME">Sampling time is</string>
+    <string name="GRAPH_CAPTION">Figure</string>
+    <string name="GRAPHS">Figures</string>
     <string-array name="SCREENS_LIST">
         <item>Main window</item>
         <item>Settings</item>
@@ -16,7 +19,8 @@
     <string-array name="SETTINGS_WINDOW">
         <item>Sampling time in milli seconds</item>
         <item>Number of retained samples (Larger values may slowdown your device)</item>
-        <item>Window size of the graph</item>
+        <item>Default window zoom on the horizontal axis</item>
+        <item>Window's height for the figures</item>
     </string-array>
     <string name="BUTTON_SAVE">Save</string>
     <string name="BUTTON_RESET">Reset to default values</string>

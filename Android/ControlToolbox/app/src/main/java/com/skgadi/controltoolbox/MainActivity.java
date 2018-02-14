@@ -11,13 +11,16 @@ import android.graphics.Typeface;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.AsyncTask;
+import android.support.annotation.DrawableRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,7 +36,6 @@ import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 import com.warkiz.widget.IndicatorSeekBar;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -69,6 +71,15 @@ public class MainActivity extends AppCompatActivity {
     MenuItem SettingsButton;
     MenuItem SimulateButton;
 
+    LinearLayout ModelView;
+    IndicatorSeekBar[] ModelParamsSeekBars;
+    GraphView[] ModelGraphs;
+    int[] ColorTable = {
+            Color.RED,
+            Color.BLUE,
+            Color.GREEN,
+            Color.BLACK
+    };
 
     //--- Database Related
     SQLiteDatabase GSK_Database;
@@ -98,7 +109,9 @@ public class MainActivity extends AppCompatActivity {
     boolean DeviceConnected = false;
     SIMULATION_STATUS SimulationState;
 
-    SimulateAlgorithm SimHandle;
+    SimulationView Model;
+
+    Simulate SimHandle;
 
 
 
@@ -142,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
         //--- Generate Settings window
         GenerateSettingsView ();
         //--- Var vals
+        ModelView = (LinearLayout)findViewById(R.id.ModelView);
         Screens = new LinearLayout[SCREENS.values().length];
         Screens[0] = (LinearLayout) findViewById(R.id.Main);
         Screens[1] = (LinearLayout) findViewById(R.id.Settings);
@@ -306,8 +320,125 @@ public class MainActivity extends AppCompatActivity {
             setTitle(getResources().getString(R.string.app_name)
                     + " >> "
                     + getResources().getStringArray(R.array.SCREENS_LIST)[PresentScreen.ordinal()]);
+        switch (Screen) {
+            case PID:
+                PreparePIDModel();
+                GenerateViewFromModel();
+                break;
+        }
     }
 
+    private void GenerateViewFromModel () {
+        //Removing previous view
+        if (ModelView.getChildCount() >0 )
+            ModelView.removeAllViews();
+        //Add an Image
+        ImageView TempImgView = new ImageView(getApplicationContext());
+        TempImgView.setImageResource(Model.Images[0]);
+        ModelView.addView(TempImgView);
+        //Sampling time
+        TextView TempTextView;
+        TempTextView = new TextView(getApplicationContext());
+        TempTextView.setText(getString(R.string.SAMPLING_TIME)+": "
+                +SettingsSeekBars[0].getProgress()
+                +" ms");
+        TempTextView.setGravity(Gravity.RIGHT);
+        ModelView.addView(TempTextView);
+        //Parameters IndicatorSeekBars
+        ModelParamsSeekBars = new IndicatorSeekBar[Model.Parameters.length];
+        for (int i=0; i<Model.Parameters.length; i++) {
+            ModelParamsSeekBars[i] = new IndicatorSeekBar.Builder(getApplicationContext())
+                    .setMin(Model.Parameters[i].Min)
+                    .setMax(Model.Parameters[i].Max)
+                    .setProgress(Model.Parameters[i].DefaultValue)
+                    .isFloatProgress(true)
+                    .thumbProgressStay(true)
+                    .build();
+            TempTextView = new TextView(getApplicationContext());
+            if (Model.Parameters[i].Name.contains(">>")) {
+                String[] TempTitles = Model.Parameters[i].Name.split(">>");
+                TempTextView.setText(TempTitles[0]);
+                TempTextView.setTextSize(18);
+                TempTextView.setTypeface(null, Typeface.BOLD);
+                ModelView.addView(TempTextView);
+                TempTextView = new TextView(getApplicationContext());
+                TempTextView.setText(TempTitles[1]);
+            } else
+                TempTextView.setText(Model.Parameters[i].Name);
+            ModelView.addView(TempTextView);
+            ModelView.addView(ModelParamsSeekBars[i]);
+        }
+        //Graphs
+        TempTextView = new TextView(getApplicationContext());
+        TempTextView.setText(getString(R.string.GRAPHS));
+        TempTextView.setTextSize(18);
+        TempTextView.setTypeface(null, Typeface.BOLD);
+        ModelView.addView(TempTextView);
+        ModelGraphs = new GraphView[Model.Figures.length];
+        for (int i=0; i<ModelGraphs.length; i++) {
+            ModelGraphs[i] = new GraphView(getApplicationContext());
+            for (int j=0; j<Model.Figures[i].Trajectories.length; j++) {
+                LineGraphSeries<DataPoint> GraphSeries = new LineGraphSeries<>();
+                GraphSeries.setColor(ColorTable[j]);
+                ModelGraphs[i].addSeries(GraphSeries);
+            }
+            ModelGraphs[i].getViewport().setScalable(true);
+            ModelGraphs[i].getViewport().setScalableY(true);
+            ModelGraphs[i].getViewport().setScrollable(true);
+            ModelGraphs[i].getViewport().setScrollableY(true);
+            ModelGraphs[i].getViewport().setMinX(0);
+            ModelGraphs[i].getViewport().setMaxX(ReadSettingsFromDatabase()[2]);
+            ModelGraphs[i].setMinimumHeight(200);
+            ModelView.addView(ModelGraphs[i]);
+            TempTextView = new TextView(getApplicationContext());
+            TempTextView.setText(getString(R.string.GRAPH_CAPTION) + " " + ((int)i+1) + ": "
+                    + Model.Figures[i].Name);
+            TempTextView.setTextSize(18);
+            TempTextView.setTypeface(null, Typeface.BOLD);
+            TempTextView.setGravity(Gravity.CENTER);
+            ModelView.addView(TempTextView);
+        }
+    }
+
+    private void PreparePIDModel() {
+        Model = new SimulationView() {
+            @Override
+            public float[] RunAlgorithms(float[] Parameters,
+                                         float[] In, float[] In1Delay, float[] In2Delay,
+                                         float[] Out1Delay, float[] Out2Delay) {
+                float K_P = Parameters[0];
+                float K_I = Parameters[1];
+                float K_D = Parameters[2];
+                float a = K_P + K_I* T_S /2 + K_D/T_S;
+                float b = -K_P + K_I*T_S/2 - 2*K_D/T_S;
+                float c = K_D/T_S;
+                float [] OutSignals = new float[1];
+                OutSignals[0] = Out1Delay[0] + a*In[0] + b*In1Delay[0] + c*In2Delay[0];
+                return OutSignals;
+            }
+        };
+        Model.Images = new int[1];
+        Model.Images[0] = R.drawable.pid;
+        Model.Ports = new String[2];
+        Model.Ports[0] = "Control signal u(t)";
+        Model.Ports[1] = "Plant's output y(t)";
+        Model.SignalGenerators = new String[1];
+        Model.SignalGenerators[0] = "Reference r(t)";
+        Model.Figures = new Figure[2];
+        String[] TempTrajectories = new String[2];
+        TempTrajectories[0]= "Reference r(t)";
+        TempTrajectories[1]= "Output y(t)";
+        Model.Figures[0] = new Figure("Reference r(t) and Output y(t)", TempTrajectories);
+        TempTrajectories = new String[2];
+        TempTrajectories[0]= "Error e(t)";
+        TempTrajectories[1]= "Control u(t)";
+        Model.Figures[1] = new Figure("Error e(t) and Control u(t)", TempTrajectories);
+        Model.Parameters = new Parameter [3];
+        Model.Parameters[0] = new Parameter("Controller parameters>>K_P", 0, 100, 1);
+        Model.Parameters[1] = new Parameter("K_I", 0, 10, 1);
+        Model.Parameters[2] = new Parameter("K_D", 0, 10, 0);
+        Model.T_S = ReadSettingsFromDatabase()[0];
+    }
     public class OnMainWindowButton implements View.OnClickListener {
         int ScreenNumber;
         public OnMainWindowButton (int ScreenNumber) {
@@ -352,7 +483,7 @@ public class MainActivity extends AppCompatActivity {
                     if (ConnectUSB() == 2) {
                         ChangeStateToSimulating();
                         SimulateParams SParams = new SimulateParams(port, PresentScreen);
-                        SimHandle = new SimulateAlgorithm();
+                        SimHandle = new Simulate();
                         SimHandle.execute(SParams);
                         Toast.makeText(MainActivity.this,
                                 "started simulating",
@@ -462,7 +593,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
-    private class SimulateAlgorithm extends AsyncTask <SimulateParams, ProgressParams, Integer> {
+    private class Simulate extends AsyncTask <SimulateParams, ProgressParams, Integer> {
         UsbSerialPort port;
         LineGraphSeries<DataPoint> GraphSeries0 = new LineGraphSeries<>();
         LineGraphSeries<DataPoint> GraphSeries1 = new LineGraphSeries<>();
@@ -627,7 +758,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPreExecute () {            GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
+        protected void onPreExecute () {
+            GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
             graph.removeAllSeries();
             IsProgressFirstIteration = true;
             GraphSeries0.setColor(Color.parseColor("#ff0000"));
