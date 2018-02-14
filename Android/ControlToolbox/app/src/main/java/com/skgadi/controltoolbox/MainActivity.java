@@ -518,7 +518,7 @@ public class MainActivity extends AppCompatActivity {
                 //Log.i("USBRec", "Received String with validation: " + Rec);
                 String[] RecStrs = Rec.split(";");
                 for (int i=0; i<RecStrs.length; i++) {
-                    RecData[i] = Float.parseFloat(RecStrs[i]);
+                    RecData[i] = Float.parseFloat(RecStrs[i])/1024*5;
                 }
                 /*Log.i("USBRec", "Size: "+RecStrs.length);
                 Log.i("USBRec", RecStrs [0]);
@@ -541,7 +541,7 @@ public class MainActivity extends AppCompatActivity {
                 isValidRead = true;
                 PrevString = "";
                 for (int i=0; i<3; i++) {
-                    RecData[i] = ConvertBytesToInt(Rec.getBytes()[i+2],Rec.getBytes()[i + 1]);
+                    //RecData[i] = ConvertBytesToInt(Rec.getBytes()[i+2],Rec.getBytes()[i + 1]);//---this is wrong
                 }
             } else
                 PrevString = Rec;
@@ -561,8 +561,10 @@ public class MainActivity extends AppCompatActivity {
             PurgeReceivedBuffer();
 
             long StartTime = System.currentTimeMillis();
-            int PresentItem=0;
-            byte[] ReadBuff = new byte[20];
+            float TestOutVal0=-5;
+            int TestOutVal1=0;
+
+
             while(!this.isCancelled()) {
                 boolean RecedData = false;
                 do {
@@ -576,14 +578,21 @@ public class MainActivity extends AppCompatActivity {
                         PValues[4]  = (System.currentTimeMillis()-StartTime)/1000.0f;
                         PValues[5] = RecData[2];
                         publishProgress(PParams);
-                        PresentItem++;
                     }
                 } while ((((System.currentTimeMillis() - StartTime))%10) != 0);
                 if (RecedData)
                     Log.i("Timing", String.valueOf(PValues[0]));
 
                 try {
-                    port.write("00".getBytes(),10);
+                    WriteToUSB(5*(float)Math.sin(2*Math.PI*0.00010*7*(System.currentTimeMillis() - StartTime)));
+                    TestOutVal1++;
+                    if (TestOutVal1 == 1) {
+                        TestOutVal1 = 0;
+                        TestOutVal0 += 0.1;
+                    }
+                    /*if (TestOutVal0 >= 5)
+                        TestOutVal0 = -5;*/
+                    Log.i("Timing", "Out: " + TestOutVal0);
                     //Thread.sleep(1);
                     MissedTicks=0;
                 } catch (Exception e) {
@@ -600,26 +609,25 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(ProgressParams... Params) {
             GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
-            GraphSeries0.appendData(new DataPoint(Params[0].Values[0], Params[0].Values[1]), true, 1000);
-            GraphSeries1.appendData(new DataPoint(Params[0].Values[2], Params[0].Values[3]), true, 1000);
-            GraphSeries2.appendData(new DataPoint(Params[0].Values[4], Params[0].Values[5]), true, 1000);
+            GraphSeries0.appendData(new DataPoint(Params[0].Values[0], Params[0].Values[1]), true, 100);
+            GraphSeries1.appendData(new DataPoint(Params[0].Values[2], Params[0].Values[3]), true, 100);
+            GraphSeries2.appendData(new DataPoint(Params[0].Values[4], Params[0].Values[5]), true, 100);
             if (IsProgressFirstIteration) {
                 IsProgressFirstIteration=false;
                 graph.addSeries(GraphSeries0);
-                graph.addSeries(GraphSeries1);
-                graph.addSeries(GraphSeries2);
+                //graph.addSeries(GraphSeries1);
+                //graph.addSeries(GraphSeries2);
                 graph.getViewport().setScalable(true);
                 graph.getViewport().setScalableY(true);
                 graph.getViewport().setScrollable(true);
                 graph.getViewport().setScrollableY(true);
                 graph.getViewport().setMinX(0);
-                graph.getViewport().setMaxX(10);
+                graph.getViewport().setMaxX(5);
             }
         }
 
         @Override
-        protected void onPreExecute () {
-            GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
+        protected void onPreExecute () {            GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
             graph.removeAllSeries();
             IsProgressFirstIteration = true;
             GraphSeries0.setColor(Color.parseColor("#ff0000"));
@@ -642,6 +650,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         protected void onCancelled() {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             Toast.makeText(getApplicationContext(),
                     "Cancelled...",
                     Toast.LENGTH_SHORT).show();
@@ -662,13 +675,23 @@ public class MainActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT).show();
             ChangeStateToNotSimulating();
         }
-        private Integer ConvertBytesToInt (byte LSB, byte MSB) {
-            Integer val=0;
-            if ((MSB & 0x80) == 0x80)
-                val = -1;
-            val = val | LSB ;
-            val = val | ((int) MSB<<8) ;
-            return val;
+        private void WriteToUSB(Float Value) throws IOException {
+            port.write(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)),10);
+        }
+        private int ConvertFloatToIntForAO (Float OutFloat) {
+            return Math.round(OutFloat*51);
+        }
+        private byte[] ConvertToIntTSendBytes (int Out) {
+            byte[] OutBytes= {0,0};
+            if (Math.abs(Out)>=255)
+                OutBytes[0] = (byte) 0xff;
+            else
+                OutBytes[0] = (byte) (Math.abs(Out) & 0x0ff);
+            if (Out>0)
+                OutBytes[1] = 0x00;
+            else
+                OutBytes[1] = 0x01;
+            return OutBytes;
         }
     }
 
