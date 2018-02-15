@@ -15,7 +15,8 @@
         <activity
             android:screenOrientation="sensorLandscape"
             android:launchMode="singleTask"
-            android:name=".MainActivity">
+            android:name=".MainActivity"
+            android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>

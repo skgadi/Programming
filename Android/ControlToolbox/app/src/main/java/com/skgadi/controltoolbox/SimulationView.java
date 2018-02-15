@@ -10,6 +10,7 @@ import com.warkiz.widget.IndicatorSeekBar;
 
 public abstract class SimulationView {
     public int[] Images;
+    public String[] ImageNames;
     public String[] Ports; // 0-Out others are input
     public String[] SignalGenerators;
     public Figure Figures [];

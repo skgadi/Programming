@@ -8,20 +8,27 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.AsyncTask;
 import android.support.annotation.DrawableRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Layout;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.Checkable;
+import android.widget.CompoundButton;
+import android.widget.ExpandableListView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -343,19 +350,49 @@ public class MainActivity extends AppCompatActivity {
         //Removing previous view
         if (ModelView.getChildCount() >0 )
             ModelView.removeAllViews();
-        //Add an Image
-        ImageView TempImgView = new ImageView(getApplicationContext());
-        TempImgView.setImageResource(Model.Images[0]);
-        ModelView.addView(TempImgView);
-        //Sampling time
+
+
         TextView TempTextView;
+        LinearLayout TempLayout;
+        Switch SwitchForLayout;
+        //Add an Image
+        for (int i=0; i<Model.Images.length; i++) {
+            TempLayout = new LinearLayout(getApplicationContext());
+            TempLayout.setOrientation(LinearLayout.VERTICAL);
+            SwitchForLayout = new Switch(getApplicationContext());
+            SwitchForLayout.setChecked(true);
+            SwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[0]
+                    + ": " + Model.ImageNames[i]);
+            SwitchForLayout.setTextSize(18);
+            SwitchForLayout.setTypeface(null, Typeface.BOLD);
+            SwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
+
+            ImageView TempImgView = new ImageView(getApplicationContext());
+            TempImgView.setImageResource(Model.Images[i]);
+            TempLayout.addView(TempImgView);
+
+
+            ModelView.addView(SwitchForLayout);
+            ModelView.addView(TempLayout);
+        }
+        //Parameters IndicatorSeekBars
+        TempLayout = new LinearLayout(getApplicationContext());
+        TempLayout.setOrientation(LinearLayout.VERTICAL);
+        SwitchForLayout = new Switch(getApplicationContext());
+        SwitchForLayout.setChecked(true);
+        SwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[1]);
+        SwitchForLayout.setTextSize(18);
+        SwitchForLayout.setTypeface(null, Typeface.BOLD);
+        SwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
+
+        //--- Sampling time
         TempTextView = new TextView(getApplicationContext());
-        TempTextView.setText(getString(R.string.SAMPLING_TIME)+": "
+        TempTextView.setText(getString(R.string.SAMPLING_TIME)+" = "
                 +SettingsSeekBars[0].getProgress()
                 +" ms");
-        TempTextView.setGravity(Gravity.RIGHT);
-        ModelView.addView(TempTextView);
-        //Parameters IndicatorSeekBars
+        TempTextView.setTypeface(null, Typeface.BOLD);
+        TempLayout.addView(TempTextView);
+        //--- Others
         ModelParamsSeekBars = new IndicatorSeekBar[Model.Parameters.length];
         for (int i=0; i<Model.Parameters.length; i++) {
             ModelParamsSeekBars[i] = new IndicatorSeekBar.Builder(getApplicationContext())
@@ -369,24 +406,36 @@ public class MainActivity extends AppCompatActivity {
             if (Model.Parameters[i].Name.contains(">>")) {
                 String[] TempTitles = Model.Parameters[i].Name.split(">>");
                 TempTextView.setText(TempTitles[0]);
-                TempTextView.setTextSize(18);
                 TempTextView.setTypeface(null, Typeface.BOLD);
-                ModelView.addView(TempTextView);
+                TempLayout.addView(TempTextView);
                 TempTextView = new TextView(getApplicationContext());
                 TempTextView.setText(TempTitles[1]);
             } else
                 TempTextView.setText(Model.Parameters[i].Name);
-            ModelView.addView(TempTextView);
-            ModelView.addView(ModelParamsSeekBars[i]);
+            TempLayout.addView(TempTextView);
+            TempLayout.addView(ModelParamsSeekBars[i]);
         }
+
+        ModelView.addView(SwitchForLayout);
+        ModelView.addView(TempLayout);
+
+        //Function generator
+        //for (int i=0; i)
+
         //Graphs
-        TempTextView = new TextView(getApplicationContext());
-        TempTextView.setText(getString(R.string.GRAPHS));
-        TempTextView.setTextSize(18);
-        TempTextView.setTypeface(null, Typeface.BOLD);
-        ModelView.addView(TempTextView);
         ModelGraphs = new GraphView[Model.Figures.length];
         for (int i=0; i<ModelGraphs.length; i++) {
+            TempLayout = new LinearLayout(getApplicationContext());
+            TempLayout.setOrientation(LinearLayout.VERTICAL);
+            SwitchForLayout = new Switch(getApplicationContext());
+            SwitchForLayout.setChecked(true);
+            SwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[3]
+                    + " " +((int)i+1) + ": "
+                    + Model.Figures[i].Name);
+            SwitchForLayout.setTextSize(18);
+            SwitchForLayout.setTypeface(null, Typeface.BOLD);
+            SwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
+
             ModelGraphs[i] = new GraphView(getApplicationContext());
             for (int j=0; j<Model.Figures[i].Trajectories.length; j++) {
                 LineGraphSeries<DataPoint> GraphSeries = new LineGraphSeries<>();
@@ -406,14 +455,9 @@ public class MainActivity extends AppCompatActivity {
                     ReadSettingsFromDatabase()[Arrays.asList(SettingsDBColumns)
                             .indexOf("ChartWindowHeight")
                             ]);
-            ModelView.addView(ModelGraphs[i]);
-            TempTextView = new TextView(getApplicationContext());
-            TempTextView.setText(getString(R.string.GRAPH_CAPTION) + " " + ((int)i+1) + ": "
-                    + Model.Figures[i].Name);
-            TempTextView.setTextSize(18);
-            TempTextView.setTypeface(null, Typeface.BOLD);
-            TempTextView.setGravity(Gravity.CENTER);
-            ModelView.addView(TempTextView);
+            TempLayout.addView(ModelGraphs[i]);
+            ModelView.addView(SwitchForLayout);
+            ModelView.addView(TempLayout);
         }
     }
 
@@ -446,6 +490,8 @@ public class MainActivity extends AppCompatActivity {
         };
         Model.Images = new int[1];
         Model.Images[0] = R.drawable.pid;
+        Model.ImageNames = new String[1];
+        Model.ImageNames[0] = "Closed loop system";
         Model.Ports = new String[2];
         Model.Ports[0] = "Control signal u(t)";
         Model.Ports[1] = "Plant's output y(t)";

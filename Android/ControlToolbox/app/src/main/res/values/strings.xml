@@ -4,9 +4,15 @@
     <string name="BUTTON_IDENIFICATION0">Zero order identification</string>
     <string name="BUTTON_IDENIFICATION1">First order identification</string>
     <string name="BUTTON_IDENIFICATION2">Second order identification</string>
-    <string name="SAMPLING_TIME">Sampling time is</string>
+    <string name="SAMPLING_TIME">Sampling time</string>
     <string name="GRAPH_CAPTION">Figure</string>
     <string name="GRAPHS">Figures</string>
+    <string-array name="SIM_VIEW_HEADS">
+        <item>Diagram</item>
+        <item>Parameters</item>
+        <item>Function Generator</item>
+        <item>Figure</item>
+    </string-array>
     <string-array name="SCREENS_LIST">
         <item>Main window</item>
         <item>Settings</item>
