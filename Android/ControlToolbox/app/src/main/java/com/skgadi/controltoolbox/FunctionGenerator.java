@@ -17,8 +17,19 @@ public class FunctionGenerator {
     public float MaximumAmplitude;
     public float StartAt;
     public float DutyCycle;
-    public boolean Compliment;
+    public float OffSet;
     public float Time;
+    public boolean Compliment = false;
+    public float[][] MinMaxDefaultsForFloats = {
+            {0, 100, 50}, {0, 5, 2.5f}, {0, 10, 0}, {0, 100, 50}, {-5, 5, 0}
+    };
+
+    public void SetType (SignalType type) {
+        Type = type;
+    }
+    public void SetType (int i) {
+        Type = SignalType.values()[i];
+    }
     public String GetSignalDescription () {
         switch (Type) {
             case STEP:
@@ -56,20 +67,20 @@ public class FunctionGenerator {
     }
     public float GenStep() {
         if (Time>=StartAt)
-            return ((!Compliment) ? 1 : -1) * MaximumAmplitude;
+            return ((!Compliment) ? 1 : -1) * MaximumAmplitude + OffSet;
         else
-            return ((Compliment) ? 1 : -1) * MaximumAmplitude;
+            return ((Compliment) ? 1 : -1) * MaximumAmplitude + OffSet;
     }
     public float GenSine() {
         if (Time>=StartAt)
-            return ((!Compliment) ? -1 : 1) * ((float) (MaximumAmplitude * Math.sin(2 * Math.PI * Frequency * (Time-StartAt))));
+            return ((!Compliment) ? -1 : 1) * ((float) (MaximumAmplitude * Math.sin(2 * Math.PI * Frequency * (Time-StartAt)))) + OffSet;
         else
             return 0;
     }
     public float GenSawTooth() {
         float TimePeriod = 1/Frequency;
         if (Time>=StartAt)
-            return ((!Compliment) ? -1 : 1) * (((Time - StartAt)%TimePeriod)*2*MaximumAmplitude/TimePeriod - MaximumAmplitude);
+            return ((!Compliment) ? -1 : 1) * (((Time - StartAt)%TimePeriod)*2*MaximumAmplitude/TimePeriod - MaximumAmplitude) + OffSet;
         else
             return 0;
     }
@@ -77,9 +88,9 @@ public class FunctionGenerator {
         float TimePeriod = 1/Frequency;
         if (Time>=StartAt) {
             if (((Time-StartAt)%TimePeriod)<(TimePeriod/2))
-                return ((!Compliment) ? -1 : 1) * (4*MaximumAmplitude/TimePeriod*(((Time - StartAt)%TimePeriod) - TimePeriod/2) + MaximumAmplitude);
+                return ((!Compliment) ? -1 : 1) * (4*MaximumAmplitude/TimePeriod*(((Time - StartAt)%TimePeriod) - TimePeriod/2) + MaximumAmplitude) + OffSet;
             else
-                return ((!Compliment) ? -1 : 1) * (-4*MaximumAmplitude/TimePeriod*(((Time - StartAt)%TimePeriod) - TimePeriod/2) + MaximumAmplitude);
+                return ((!Compliment) ? -1 : 1) * (-4*MaximumAmplitude/TimePeriod*(((Time - StartAt)%TimePeriod) - TimePeriod/2) + MaximumAmplitude) + OffSet;
         } else
             return 0;
     }
@@ -91,9 +102,9 @@ public class FunctionGenerator {
         float TimePeriod = 1/Frequency;
         if (Time>=StartAt) {
             if (((Time-StartAt)%TimePeriod)<(DutyCycle/100))
-                return ((!Compliment) ? -1 : 1) * MaximumAmplitude;
+                return ((!Compliment) ? -1 : 1) * MaximumAmplitude + OffSet;
             else
-                return ((Compliment) ? -1 : 1) * MaximumAmplitude;
+                return ((Compliment) ? -1 : 1) * MaximumAmplitude + OffSet;
 
         } else
             return 0;

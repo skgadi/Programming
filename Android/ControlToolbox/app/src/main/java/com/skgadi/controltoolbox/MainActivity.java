@@ -8,26 +8,20 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.AsyncTask;
-import android.support.annotation.DrawableRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Layout;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.Checkable;
-import android.widget.CompoundButton;
-import android.widget.ExpandableListView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,6 +38,7 @@ import com.jjoe64.graphview.series.LineGraphSeries;
 import com.warkiz.widget.IndicatorSeekBar;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -118,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
     SIMULATION_STATUS SimulationState;
 
     SimulationView Model;
+    FunctionGenerator[] GeneratedSignals;
 
     Simulate SimHandle;
 
@@ -342,8 +338,16 @@ public class MainActivity extends AppCompatActivity {
             case PID:
                 PreparePIDModel();
                 GenerateViewFromModel();
+                Screens[2].setVisibility(View.GONE);
                 break;
         }
+    }
+
+    private void DrawALine(LinearLayout ParentView) {
+        View TempView = new View(getApplicationContext());
+        TempView.setMinimumHeight(2);
+        TempView.setBackgroundColor(Color.BLACK);
+        ParentView.addView(TempView);
     }
 
     private void GenerateViewFromModel () {
@@ -351,45 +355,49 @@ public class MainActivity extends AppCompatActivity {
         if (ModelView.getChildCount() >0 )
             ModelView.removeAllViews();
 
-
+        //Declaring TempVariables
         TextView TempTextView;
         LinearLayout TempLayout;
-        Switch SwitchForLayout;
+        Switch TempSwitchForLayout;
+        DrawALine(ModelView);
         //Add an Image
+        DrawALine(ModelView);
         for (int i=0; i<Model.Images.length; i++) {
             TempLayout = new LinearLayout(getApplicationContext());
             TempLayout.setOrientation(LinearLayout.VERTICAL);
-            SwitchForLayout = new Switch(getApplicationContext());
-            SwitchForLayout.setChecked(true);
-            SwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[0]
+            TempSwitchForLayout = new Switch(getApplicationContext());
+            TempSwitchForLayout.setChecked(true);
+            TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[0]
                     + ": " + Model.ImageNames[i]);
-            SwitchForLayout.setTextSize(18);
-            SwitchForLayout.setTypeface(null, Typeface.BOLD);
-            SwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
+            TempSwitchForLayout.setTextSize(18);
+            TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
+            TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
 
             ImageView TempImgView = new ImageView(getApplicationContext());
             TempImgView.setImageResource(Model.Images[i]);
             TempLayout.addView(TempImgView);
 
 
-            ModelView.addView(SwitchForLayout);
+            ModelView.addView(TempSwitchForLayout);
             ModelView.addView(TempLayout);
+            DrawALine(ModelView);
         }
         //Parameters IndicatorSeekBars
         TempLayout = new LinearLayout(getApplicationContext());
         TempLayout.setOrientation(LinearLayout.VERTICAL);
-        SwitchForLayout = new Switch(getApplicationContext());
-        SwitchForLayout.setChecked(true);
-        SwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[1]);
-        SwitchForLayout.setTextSize(18);
-        SwitchForLayout.setTypeface(null, Typeface.BOLD);
-        SwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
+        TempSwitchForLayout = new Switch(getApplicationContext());
+        TempSwitchForLayout.setChecked(true);
+        TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[1]);
+        TempSwitchForLayout.setTextSize(18);
+        TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
+        TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
 
         //--- Sampling time
         TempTextView = new TextView(getApplicationContext());
         TempTextView.setText(getString(R.string.SAMPLING_TIME)+" = "
                 +SettingsSeekBars[0].getProgress()
                 +" ms");
+        DrawALine(ModelView);
         TempTextView.setTypeface(null, Typeface.BOLD);
         TempLayout.addView(TempTextView);
         //--- Others
@@ -416,25 +424,78 @@ public class MainActivity extends AppCompatActivity {
             TempLayout.addView(ModelParamsSeekBars[i]);
         }
 
-        ModelView.addView(SwitchForLayout);
+        ModelView.addView(TempSwitchForLayout);
         ModelView.addView(TempLayout);
+        DrawALine(ModelView);
 
         //Function generator
-        //for (int i=0; i)
+        DrawALine(ModelView);
+        GeneratedSignals = new FunctionGenerator[Model.SignalGenerators.length];
+        for (int i=0; i<Model.SignalGenerators.length; i++) {
+            TempLayout = new LinearLayout(getApplicationContext());
+            TempLayout.setOrientation(LinearLayout.VERTICAL);
+            TempSwitchForLayout = new Switch(getApplicationContext());
+            TempSwitchForLayout.setChecked(true);
+            TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[2]
+                    + ": "
+                    + Model.SignalGenerators[i]);
+            TempSwitchForLayout.setTextSize(18);
+            TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
+            TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
+
+            //SignalType
+            Spinner TempFunctionsView = new Spinner(getApplicationContext());
+            final List<String> SignalsList =
+                    new ArrayList<>(Arrays.asList(getResources().getStringArray(R.array.AVAILABLE_SIGNALS)));
+            final ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(
+                    this,R.layout.spinner_item,SignalsList);
+            TempFunctionsView.setAdapter(spinnerArrayAdapter);
+            TempLayout.addView(TempFunctionsView);
+            GeneratedSignals[i] = new FunctionGenerator();
+            TempFunctionsView.setOnItemSelectedListener(new SignalTypeListener(GeneratedSignals[i]));
+            //Floats
+            for (int j=0; j<5; j++) {
+                TempTextView = new TextView(getApplicationContext());
+                TempTextView.setText(getResources().getStringArray(R.array.SIGNAL_GENERATOR_PARAMETERS)[j]);
+                IndicatorSeekBar TempSeekBar = new IndicatorSeekBar.Builder(getApplicationContext())
+                        .setMin(GeneratedSignals[i].MinMaxDefaultsForFloats[j][0])
+                        .setMax(GeneratedSignals[i].MinMaxDefaultsForFloats[j][1])
+                        .setProgress(GeneratedSignals[i].MinMaxDefaultsForFloats[j][2])
+                        .isFloatProgress(true)
+                        .thumbProgressStay(true)
+                        .build();
+                TempSeekBar.setOnSeekChangeListener(
+                        new SeekBarListenerForFunctionGenerator(GeneratedSignals[i], j));
+                TempLayout.addView(TempTextView);
+                TempLayout.addView(TempSeekBar);
+            }
+            //Compliment
+            Switch TempSwitchForCompliment = new Switch(getApplicationContext());
+            TempSwitchForCompliment.setChecked(false);
+            TempSwitchForCompliment.setText(R.string.INVERT_SIGNAL);
+            TempSwitchForCompliment.setOnCheckedChangeListener(new SignalComplimentListener(GeneratedSignals[i]));
+            TempLayout.addView(TempSwitchForCompliment);
+
+
+            ModelView.addView(TempSwitchForLayout);
+            ModelView.addView(TempLayout);
+            DrawALine(ModelView);
+        }
 
         //Graphs
+        DrawALine(ModelView);
         ModelGraphs = new GraphView[Model.Figures.length];
         for (int i=0; i<ModelGraphs.length; i++) {
             TempLayout = new LinearLayout(getApplicationContext());
             TempLayout.setOrientation(LinearLayout.VERTICAL);
-            SwitchForLayout = new Switch(getApplicationContext());
-            SwitchForLayout.setChecked(true);
-            SwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[3]
+            TempSwitchForLayout = new Switch(getApplicationContext());
+            TempSwitchForLayout.setChecked(true);
+            TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[3]
                     + " " +((int)i+1) + ": "
                     + Model.Figures[i].Name);
-            SwitchForLayout.setTextSize(18);
-            SwitchForLayout.setTypeface(null, Typeface.BOLD);
-            SwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
+            TempSwitchForLayout.setTextSize(18);
+            TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
+            TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
 
             ModelGraphs[i] = new GraphView(getApplicationContext());
             for (int j=0; j<Model.Figures[i].Trajectories.length; j++) {
@@ -456,9 +517,12 @@ public class MainActivity extends AppCompatActivity {
                             .indexOf("ChartWindowHeight")
                             ]);
             TempLayout.addView(ModelGraphs[i]);
-            ModelView.addView(SwitchForLayout);
+
+            ModelView.addView(TempSwitchForLayout);
             ModelView.addView(TempLayout);
+            DrawALine(ModelView);
         }
+        DrawALine(ModelView);
     }
 
     private void PreparePIDModel() {
@@ -488,15 +552,18 @@ public class MainActivity extends AppCompatActivity {
                 return Trajectories;
             }
         };
-        Model.Images = new int[1];
+        Model.Images = new int[2];
         Model.Images[0] = R.drawable.pid;
-        Model.ImageNames = new String[1];
+        Model.Images[1] = R.drawable.pid;
+        Model.ImageNames = new String[2];
         Model.ImageNames[0] = "Closed loop system";
+        Model.ImageNames[1] = "Reference Value details";
         Model.Ports = new String[2];
         Model.Ports[0] = "Control signal u(t)";
         Model.Ports[1] = "Plant's output y(t)";
-        Model.SignalGenerators = new String[1];
-        Model.SignalGenerators[0] = "Reference r(t)";
+        Model.SignalGenerators = new String[2];
+        Model.SignalGenerators[0] = "Reference r1(t)";
+        Model.SignalGenerators[1] = "Reference r2(t)";
         Model.Figures = new Figure[2];
         String[] TempTrajectories = new String[2];
         TempTrajectories[0]= "Reference r(t)";
