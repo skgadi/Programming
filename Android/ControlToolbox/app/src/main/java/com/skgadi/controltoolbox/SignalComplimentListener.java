@@ -1,6 +1,7 @@
 package com.skgadi.controltoolbox;
 
 import android.widget.CompoundButton;
+import android.widget.Switch;
 
 /**
  * Created by gadis on 15-Feb-18.
@@ -8,11 +9,14 @@ import android.widget.CompoundButton;
 
 public class SignalComplimentListener implements CompoundButton.OnCheckedChangeListener {
     public FunctionGenerator Signal;
-    SignalComplimentListener (FunctionGenerator signal) {
+    public Switch LayoutSwitch;
+    SignalComplimentListener (FunctionGenerator signal, Switch layoutSwitch) {
         Signal = signal;
+        LayoutSwitch = layoutSwitch;
     }
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         Signal.Compliment = b;
+        LayoutSwitch.setText((((String) LayoutSwitch.getText()).split("="))[0] + "=" + Signal.GetSignalDescription());
     }
 }

@@ -1,6 +1,8 @@
 package com.skgadi.controltoolbox;
 
 
+import android.widget.Switch;
+
 import com.warkiz.widget.IndicatorSeekBar;
 
 /**
@@ -10,9 +12,11 @@ import com.warkiz.widget.IndicatorSeekBar;
 public class SeekBarListenerForFunctionGenerator implements IndicatorSeekBar.OnSeekBarChangeListener {
     public FunctionGenerator Signal;
     public int Index;
-    public SeekBarListenerForFunctionGenerator(FunctionGenerator signal, int index) {
+    public Switch LayoutSwitch;
+    public SeekBarListenerForFunctionGenerator(FunctionGenerator signal, int index, Switch layoutSwitch) {
         Signal = signal;
         Index = index;
+        LayoutSwitch = layoutSwitch;
     }
     @Override
     public void onProgressChanged(IndicatorSeekBar seekBar, int progress, float progressFloat, boolean fromUserTouch) {
@@ -33,6 +37,7 @@ public class SeekBarListenerForFunctionGenerator implements IndicatorSeekBar.OnS
                 Signal.OffSet = progressFloat;
                 break;
         }
+        LayoutSwitch.setText((((String) LayoutSwitch.getText()).split("="))[0] + "=" + Signal.GetSignalDescription());
     }
 
     @Override

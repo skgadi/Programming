@@ -332,7 +332,7 @@ public class MainActivity extends AppCompatActivity {
             setTitle(getResources().getString(R.string.app_name));
         else
             setTitle(getResources().getString(R.string.app_name)
-                    + " >> "
+                    + ": "
                     + getResources().getStringArray(R.array.SCREENS_LIST)[PresentScreen.ordinal()]);
         switch (Screen) {
             case PID:
@@ -452,7 +452,8 @@ public class MainActivity extends AppCompatActivity {
             TempFunctionsView.setAdapter(spinnerArrayAdapter);
             TempLayout.addView(TempFunctionsView);
             GeneratedSignals[i] = new FunctionGenerator();
-            TempFunctionsView.setOnItemSelectedListener(new SignalTypeListener(GeneratedSignals[i]));
+            TempFunctionsView.setOnItemSelectedListener(
+                    new SignalTypeListener(GeneratedSignals[i], TempSwitchForLayout));
             //Floats
             for (int j=0; j<5; j++) {
                 TempTextView = new TextView(getApplicationContext());
@@ -465,7 +466,7 @@ public class MainActivity extends AppCompatActivity {
                         .thumbProgressStay(true)
                         .build();
                 TempSeekBar.setOnSeekChangeListener(
-                        new SeekBarListenerForFunctionGenerator(GeneratedSignals[i], j));
+                        new SeekBarListenerForFunctionGenerator(GeneratedSignals[i], j, TempSwitchForLayout));
                 TempLayout.addView(TempTextView);
                 TempLayout.addView(TempSeekBar);
             }
@@ -473,7 +474,8 @@ public class MainActivity extends AppCompatActivity {
             Switch TempSwitchForCompliment = new Switch(getApplicationContext());
             TempSwitchForCompliment.setChecked(false);
             TempSwitchForCompliment.setText(R.string.INVERT_SIGNAL);
-            TempSwitchForCompliment.setOnCheckedChangeListener(new SignalComplimentListener(GeneratedSignals[i]));
+            TempSwitchForCompliment.setOnCheckedChangeListener(
+                    new SignalComplimentListener(GeneratedSignals[i], TempSwitchForLayout));
             TempLayout.addView(TempSwitchForCompliment);
 
 
