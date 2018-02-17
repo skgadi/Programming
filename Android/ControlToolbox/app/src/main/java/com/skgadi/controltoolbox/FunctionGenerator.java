@@ -14,14 +14,14 @@ enum SignalType {
 public class FunctionGenerator {
     public SignalType Type;
     public float Frequency=50;
-    public float MaximumAmplitude=2.5f;
+    public float MaximumAmplitude=0;
     public float StartAt=0;
     public float DutyCycle=50;
     public float OffSet=0;
     public float Time;
     public boolean Compliment = false;
     public float[][] MinMaxDefaultsForFloats = {
-            {0, 100, 50}, {0, 5, 2.5f}, {0, 10, 0}, {0, 100, 50}, {-5, 5, 0}
+            {0, 100, 50}, {0, 5, 0}, {0, 10, 0}, {0, 100, 50}, {-5, 5, 0}
     };
 
     public void SetType (SignalType type) {
@@ -36,7 +36,8 @@ public class FunctionGenerator {
                 return ((Compliment) ? "-":"") + MaximumAmplitude
                         + "[2H(t"
                         + ((StartAt!=0) ? -StartAt:"")
-                        + ")-1]";
+                        + ")-1]"
+                        + ((OffSet!=0) ? (OffSet>0?"+"+OffSet:OffSet) :"");
             case SINE:
                 return ((Compliment) ? "-":"") + MaximumAmplitude
                         + "sin(2\u03C0"
@@ -44,7 +45,8 @@ public class FunctionGenerator {
                         + ((StartAt!=0) ? "(":"")
                         + "t"
                         + ((StartAt!=0) ? -StartAt+")":"")
-                        + ")";
+                        + ")"
+                        + ((OffSet!=0) ? (OffSet>0?"+"+OffSet:OffSet) :"");
             case SAWTOOTH:
                 return ((Compliment) ? "-":"") + MaximumAmplitude
                         + "\u00D72["+
@@ -57,7 +59,8 @@ public class FunctionGenerator {
                         + ((StartAt!=0) ? "(":"")
                         + "t"
                         + ((StartAt!=0) ? -StartAt+")":"")
-                        + ")]";
+                        + ")]"
+                        + ((OffSet!=0) ? (OffSet>0?"+"+OffSet:OffSet) :"");
             case TRIANGLE:
                 return ((Compliment) ? "-":"") + MaximumAmplitude
                         + "\u00D7\u222B{sgn[sin(2π"
@@ -65,7 +68,8 @@ public class FunctionGenerator {
                         + ((StartAt!=0) ? "(":"")
                         + "t"
                         + ((StartAt!=0) ? -StartAt+")":"")
-                        + ")]}dt";
+                        + ")]}dt"
+                        + ((OffSet!=0) ? (OffSet>0?"+"+OffSet:OffSet) :"");
             case SQUARE:
                 return  ((Compliment) ? "-":"") + MaximumAmplitude
                         + "sgn[sin(2π"
@@ -73,7 +77,8 @@ public class FunctionGenerator {
                         + ((StartAt!=0) ? "(":"")
                         + "t"
                         + ((StartAt!=0) ? -StartAt+")":"")
-                        + ")]";
+                        + ")]"
+                        + ((OffSet!=0) ? (OffSet>0?"+"+OffSet:OffSet) :"");
             case RECTANGLE:
                 return "A pulse train with: Amplitude = "
                         + ((Compliment) ? "-":"") + 2*MaximumAmplitude
@@ -81,7 +86,8 @@ public class FunctionGenerator {
                         + Frequency
                         + "Hz, Duty factor = "
                         + DutyCycle
-                        +"%, ";
+                        +"%, and Offset ="
+                        + OffSet + "V";
         }
         return "";
     }

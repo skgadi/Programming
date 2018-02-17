@@ -33,6 +33,7 @@ import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.LegendRenderer;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 import com.warkiz.widget.IndicatorSeekBar;
@@ -503,6 +504,7 @@ public class MainActivity extends AppCompatActivity {
             for (int j=0; j<Model.Figures[i].Trajectories.length; j++) {
                 LineGraphSeries<DataPoint> GraphSeries = new LineGraphSeries<>();
                 GraphSeries.setColor(ColorTable[j]);
+                GraphSeries.setTitle(Model.Figures[i].Trajectories[j]);
                 ModelGraphs[i].addSeries(GraphSeries);
             }
             ModelGraphs[i].getViewport().setScalable(true);
@@ -511,13 +513,15 @@ public class MainActivity extends AppCompatActivity {
             ModelGraphs[i].getViewport().setScrollableY(true);
             ModelGraphs[i].getViewport().setMinX(0);
             ModelGraphs[i].getViewport().setMaxX(
-                    ReadSettingsFromDatabase()[Arrays.asList(SettingsDBColumns)
+                    ReadSettingsPositions()[Arrays.asList(SettingsDBColumns)
                             .indexOf("ZoomXWindow")
                             ]);
             ModelGraphs[i].setMinimumHeight(
-                    ReadSettingsFromDatabase()[Arrays.asList(SettingsDBColumns)
+                    ReadSettingsPositions()[Arrays.asList(SettingsDBColumns)
                             .indexOf("ChartWindowHeight")
                             ]);
+            ModelGraphs[i].getLegendRenderer().setVisible(true);
+            ModelGraphs[i].getLegendRenderer().setAlign(LegendRenderer.LegendAlign.TOP);
             TempLayout.addView(ModelGraphs[i]);
 
             ModelView.addView(TempSwitchForLayout);
@@ -530,23 +534,24 @@ public class MainActivity extends AppCompatActivity {
     private void PreparePIDModel() {
         Model = new SimulationView() {
             @Override
-            public float[] RunAlgorithms(float[] Parameters,
-                                         float[] Generated, float[] Generated1Delay, float[] Generated2Delay,
-                                         float[] In, float[] In1Delay, float[] In2Delay,
-                                         float[] Out1Delay, float[] Out2Delay) {
+            public float[] RunAlgorithms(
+                    float[] Parameters,
+                    float[][] Generated,
+                    float[][] Input,
+                    float[][] Output
+            ){
                 float K_P = Parameters[0];
                 float K_I = Parameters[1];
                 float K_D = Parameters[2];
-                float a = K_P + K_I* T_S /2 + K_D/T_S;
-                float b = -K_P + K_I*T_S/2 - 2*K_D/T_S;
+                float a = K_P + K_I* T_S /2.0f + K_D/T_S;
+                float b = -K_P + K_I*T_S/2.0f - 2.0f*K_D/T_S;
                 float c = K_D/T_S;
                 float[] E = new float[3];
-                E[0] = In[0] - (Generated[0] + Generated[1] + Generated[2]);
-                E[1] = In1Delay[0] - (Generated1Delay[0] + Generated1Delay[1] + Generated1Delay[2]);
-                E[2] = In2Delay[0] - (Generated2Delay[0] + Generated2Delay[1] + Generated2Delay[2]);
-
+                for (int i=0; i<3; i++) {
+                    E[i] = ((Generated[0][i] + Generated[1][i] + Generated[2][i]) - Input[0][i]);
+                }
                 float [] OutSignals = new float[1];
-                OutSignals[0] = Out1Delay[0]
+                OutSignals[0] = Output[0][1]
                         + a * E[0]
                         + b * E[1]
                         + c * E[2];
@@ -554,15 +559,26 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public float[] OutGraphSignals(float[] Generated, float[] In, float[] Out) {
+            public float[] OutGraphSignals(
+                    float[] Parameters,
+                    float[][] Generated,
+                    float[][] Input,
+                    float[][] Output
+            )
+            {
                 float[] Trajectories = new float[4];
-                Trajectories[0] = Generated[0];
-                Trajectories[1] = In[0];
-                Trajectories[2] = Generated[0]-In[0];
-                Trajectories[3] = Out[0];
+                Trajectories[0] = Generated[0][0] + Generated[1][0] + Generated[2][0];
+                Trajectories[1] = Input[0][0];
+                Trajectories[2] = Trajectories[0]-Input[0][0];
+                Trajectories[3] = Output[0][0];
                 return Trajectories;
             }
         };
+        Model.NoOfInputs=1;
+        Model.NoOfOutputs=1;
+        Model.NoOfPastInputsRequired = 2;
+        Model.NoOfPastOuputsRequired = 1;
+        Model.NoOfPastGeneratedValuesRequired = 2;
         Model.OutPut = new float[1];
         Model.OutPut[0]=0;
         Model.Images = new int[2];
@@ -574,9 +590,10 @@ public class MainActivity extends AppCompatActivity {
         Model.Ports = new String[2];
         Model.Ports[0] = "Control signal u(t)";
         Model.Ports[1] = "Plant's output y(t)";
-        Model.SignalGenerators = new String[2];
-        Model.SignalGenerators[0] = "Reference r1(t)";
-        Model.SignalGenerators[1] = "Reference r2(t)";
+        Model.SignalGenerators = new String[3];
+        Model.SignalGenerators[0] = "R1(t)";
+        Model.SignalGenerators[1] = "R2(t)";
+        Model.SignalGenerators[2] = "R3(t)";
         Model.Figures = new Figure[2];
         String[] TempTrajectories = new String[2];
         TempTrajectories[0]= "Reference r(t)";
@@ -587,10 +604,10 @@ public class MainActivity extends AppCompatActivity {
         TempTrajectories[1]= "Control u(t)";
         Model.Figures[1] = new Figure("Error e(t) and Control u(t)", TempTrajectories);
         Model.Parameters = new Parameter [3];
-        Model.Parameters[0] = new Parameter("Controller parameters>>K_P", 0, 100, 1);
-        Model.Parameters[1] = new Parameter("K_I", 0, 10, 1);
-        Model.Parameters[2] = new Parameter("K_D", 0, 10, 0);
-        Model.T_S = ReadSettingsFromDatabase()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")];
+        Model.Parameters[0] = new Parameter("Controller parameters>>K_P", 0, 100, 0.1f);
+        Model.Parameters[1] = new Parameter("K_I", 0, 10, 0);
+        Model.Parameters[2] = new Parameter("K_D", 0, 1, 0);
+        Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0f;
     }
     public class OnMainWindowButton implements View.OnClickListener {
         int ScreenNumber;
@@ -635,7 +652,12 @@ public class MainActivity extends AppCompatActivity {
                 if (SimulationState == SIMULATION_STATUS.OFF) {
                     if (ConnectUSB() == 2) {
                         ChangeStateToSimulating();
-                        SimulateParams SParams = new SimulateParams(port, PresentScreen);
+                        SimulateParams SParams = new SimulateParams(port,
+                                Model,
+                                GeneratedSignals,
+                                ModelParamsSeekBars,
+                                ModelGraphs,
+                                PresentScreen);
                         SimHandle = new Simulate();
                         SimHandle.execute(SParams);
                         Toast.makeText(MainActivity.this,
@@ -733,10 +755,25 @@ public class MainActivity extends AppCompatActivity {
     */
     private static class SimulateParams {
         UsbSerialPort Port;
+        SimulationView SimulationModel;
+        FunctionGenerator[] GeneratedSignals;
+        IndicatorSeekBar[] ModelParamsSeekBars;
+        GraphView[] ModelGraphs;
         SCREENS Screen;
-        SimulateParams (UsbSerialPort Prt, SCREENS Srn) {
-            Port = Prt;
-            Screen = Srn;
+        SimulateParams (
+                UsbSerialPort port,
+                SimulationView simulationModel,
+                FunctionGenerator[] generatedSignals,
+                IndicatorSeekBar[] modelParamsSeekBars,
+                GraphView[] modelGraphs,
+                SCREENS screen
+                ) {
+            Port = port;
+            SimulationModel = simulationModel;
+            GeneratedSignals = generatedSignals;
+            ModelParamsSeekBars = modelParamsSeekBars;
+            ModelGraphs = modelGraphs;
+            Screen = screen;
         }
     }
     private static class ProgressParams {
@@ -744,10 +781,16 @@ public class MainActivity extends AppCompatActivity {
         ProgressParams (float[] values) {
             Values = values;
         }
-
     }
     private class Simulate extends AsyncTask <SimulateParams, ProgressParams, Integer> {
         UsbSerialPort port;
+        float[][] Input;
+        float[][] Output;
+        float[][] PreparedSignals;
+        float Time;
+
+
+
         LineGraphSeries<DataPoint> GraphSeries0 = new LineGraphSeries<>();
         LineGraphSeries<DataPoint> GraphSeries1 = new LineGraphSeries<>();
         LineGraphSeries<DataPoint> GraphSeries2 = new LineGraphSeries<>();
@@ -855,12 +898,27 @@ public class MainActivity extends AppCompatActivity {
                     if (isValidRead) {
                         isValidRead  = false;
                         RecedData = true;
-                        PValues[0]  = (System.currentTimeMillis()-StartTime)/1000.0f;
+                        Time = (System.currentTimeMillis()-StartTime)/1000.0f;
+                        for (int i=0; i<Input.length; i++)
+                            Input[i] = PutElementToFIFO(Input[i], RecData[i]);
+                        for (int i = 0; i< PreparedSignals.length; i++)
+                            PreparedSignals[i] = PutElementToFIFO(PreparedSignals[i],
+                                    GeneratedSignals[i].GetValue(Time));
+                        float[] TempOutput = Model.RunAlgorithms(
+                                GetParameters(),
+                                PreparedSignals,
+                                Input,
+                                Output
+                        );
+                        for (int i=0; i<TempOutput.length; i++)
+                            Output[i] = PutElementToFIFO(Output[i], PutBetweenRange(TempOutput[i], -5, 5));
+
+                        /*PValues[0]  = (System.currentTimeMillis()-StartTime)/1000.0f;
                         PValues[1] = RecData[0];
                         PValues[2]  = (System.currentTimeMillis()-StartTime)/1000.0f;
                         PValues[3] = RecData[1];
                         PValues[4]  = (System.currentTimeMillis()-StartTime)/1000.0f;
-                        PValues[5] = RecData[2];
+                        PValues[5] = RecData[2];*/
                         publishProgress(PParams);
                     }
                 } while ((((System.currentTimeMillis() - StartTime))%10) != 0);
@@ -868,15 +926,8 @@ public class MainActivity extends AppCompatActivity {
                     Log.i("Timing", String.valueOf(PValues[0]));
 
                 try {
-                    WriteToUSB(5*(float)Math.sin(2*Math.PI*0.00010*7*(System.currentTimeMillis() - StartTime)));
-                    TestOutVal1++;
-                    if (TestOutVal1 == 1) {
-                        TestOutVal1 = 0;
-                        TestOutVal0 += 0.1;
-                    }
-                    /*if (TestOutVal0 >= 5)
-                        TestOutVal0 = -5;*/
-                    Log.i("Timing", "Out: " + TestOutVal0);
+                    WriteToUSB(Output[0][0]);
+                    Log.i("Timing", String.valueOf(Output[0][0]));
                     //Thread.sleep(1);
                     MissedTicks=0;
                 } catch (Exception e) {
@@ -892,7 +943,25 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(ProgressParams... Params) {
-            GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
+            float[] SignalsToPlot = Model.OutGraphSignals(
+                    GetParameters(),
+                    PreparedSignals,
+                    Input,
+                    Output
+            );
+            int Iteration=0;
+            for (int i=0; i<ModelGraphs.length; i++) {
+                for (int j=0; j< ModelGraphs[i].getSeries().size(); j++) {
+                    ((LineGraphSeries<DataPoint>)(ModelGraphs[i].getSeries().get(j))).appendData(
+                            new DataPoint(
+                                    Time, SignalsToPlot[Iteration]), true,
+                            ReadSettingsPositions()[Arrays.asList(SettingsDBColumns)
+                                    .indexOf("ChartHistoryLength")]
+                                    );
+                    Iteration++;
+                }
+            }
+            /*GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
             GraphSeries0.appendData(new DataPoint(Params[0].Values[0], Params[0].Values[1]), true, 100);
             GraphSeries1.appendData(new DataPoint(Params[0].Values[2], Params[0].Values[3]), true, 100);
             GraphSeries2.appendData(new DataPoint(Params[0].Values[4], Params[0].Values[5]), true, 100);
@@ -907,17 +976,41 @@ public class MainActivity extends AppCompatActivity {
                 graph.getViewport().setScrollableY(true);
                 graph.getViewport().setMinX(0);
                 graph.getViewport().setMaxX(5);
-            }
+            }*/
         }
 
         @Override
         protected void onPreExecute () {
-            GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
+            Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0f;
+            Input = new float[Model.NoOfInputs][Model.NoOfPastInputsRequired+1];
+            Output = new float[Model.NoOfOutputs][Model.NoOfPastOuputsRequired+1];
+            PreparedSignals = new float[Model.SignalGenerators.length][Model.NoOfPastGeneratedValuesRequired+1];
+            for (int i=0; i<Input.length; i++) {
+                for (int j=0; j<Input[i].length; j++)
+                    Input[i][j] = 0;
+            }
+            for (int i=0; i<Output.length; i++) {
+                for (int j=0; j<Output[i].length; j++)
+                    Output[i][j] = 0;
+            }
+            for (int i = 0; i< PreparedSignals.length; i++) {
+                for (int j = 0; j< PreparedSignals[i].length; j++)
+                    PreparedSignals[i][j] = 0;
+            }
+
+
+            for (int i=0; i<ModelGraphs.length; i++) {
+                for (int j=0; j< ModelGraphs[i].getSeries().size(); j++) {
+                    ((LineGraphSeries<DataPoint>)(ModelGraphs[i].getSeries().get(j))).resetData(new DataPoint[0]);
+                }
+            }
+
+            /*GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
             graph.removeAllSeries();
             IsProgressFirstIteration = true;
             GraphSeries0.setColor(Color.parseColor("#ff0000"));
             GraphSeries1.setColor(Color.parseColor("#00ff00"));
-            GraphSeries2.setColor(Color.parseColor("#0000ff"));
+            GraphSeries2.setColor(Color.parseColor("#0000ff"));*/
 
         }
         @Override
@@ -933,7 +1026,27 @@ public class MainActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT).show();
             ChangeStateToNotSimulating();
         }
-
+        protected float PutBetweenRange (float value, float MinValue, float MaxValue) {
+            if (value>MaxValue)
+                return MaxValue;
+            if (value<MinValue)
+                return MinValue;
+            return value;
+        }
+        protected float[] GetParameters () {
+            float[] ParameterValues = new float[Model.Parameters.length];
+            for (int i=0; i<ParameterValues.length; i++) {
+                ParameterValues[i] = ModelParamsSeekBars[i].getProgressFloat();
+            }
+            return ParameterValues;
+        }
+        protected float[] PutElementToFIFO (float[] array, float element){
+            for (int i=(array.length-1); i>0; i--) {
+                array[i] = array[i-1];
+            }
+            array[0] = element;
+            return array;
+        }
         protected void onCancelled() {
             try {
                 Thread.sleep(1000);
