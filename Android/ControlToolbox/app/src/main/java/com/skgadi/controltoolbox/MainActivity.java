@@ -530,7 +530,8 @@ public class MainActivity extends AppCompatActivity {
     private void PreparePIDModel() {
         Model = new SimulationView() {
             @Override
-            public float[] RunAlgorithms(float[] Parameters, float[] Generated,
+            public float[] RunAlgorithms(float[] Parameters,
+                                         float[] Generated, float[] Generated1Delay, float[] Generated2Delay,
                                          float[] In, float[] In1Delay, float[] In2Delay,
                                          float[] Out1Delay, float[] Out2Delay) {
                 float K_P = Parameters[0];
@@ -539,8 +540,16 @@ public class MainActivity extends AppCompatActivity {
                 float a = K_P + K_I* T_S /2 + K_D/T_S;
                 float b = -K_P + K_I*T_S/2 - 2*K_D/T_S;
                 float c = K_D/T_S;
+                float[] E = new float[3];
+                E[0] = In[0] - (Generated[0] + Generated[1] + Generated[2]);
+                E[1] = In1Delay[0] - (Generated1Delay[0] + Generated1Delay[1] + Generated1Delay[2]);
+                E[2] = In2Delay[0] - (Generated2Delay[0] + Generated2Delay[1] + Generated2Delay[2]);
+
                 float [] OutSignals = new float[1];
-                OutSignals[0] = Out1Delay[0] + a*In[0] + b*In1Delay[0] + c*In2Delay[0];
+                OutSignals[0] = Out1Delay[0]
+                        + a * E[0]
+                        + b * E[1]
+                        + c * E[2];
                 return OutSignals;
             }
 
@@ -554,6 +563,8 @@ public class MainActivity extends AppCompatActivity {
                 return Trajectories;
             }
         };
+        Model.OutPut = new float[1];
+        Model.OutPut[0]=0;
         Model.Images = new int[2];
         Model.Images[0] = R.drawable.pid;
         Model.Images[1] = R.drawable.pid;
