@@ -190,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
         SettingsSeekBars = new IndicatorSeekBar[SettingsDefault.length];
         for (int i=0; i<SettingsDefault.length; i++) {
             TempTextView = new TextView(getApplicationContext());
+            TempTextView.setTextColor(Color.BLACK);
             if (getResources().getStringArray(R.array.SETTINGS_WINDOW)[i].contains(">>")) {
                 String[] TempTitles = getResources().getStringArray(R.array.SETTINGS_WINDOW)[i].split(">>");
                 TempTextView.setText(TempTitles[0]);
@@ -197,6 +198,7 @@ public class MainActivity extends AppCompatActivity {
                 TempTextView.setTypeface(null, Typeface.BOLD);
                 ((LinearLayout) findViewById(R.id.SettingsSeekBars)).addView(TempTextView);
                 TempTextView = new TextView(getApplicationContext());
+                TempTextView.setTextColor(Color.BLACK);
                 TempTextView.setText(TempTitles[1]);
             } else
                 TempTextView.setText(getResources().getStringArray(R.array.SETTINGS_WINDOW)[i]);
@@ -206,7 +208,6 @@ public class MainActivity extends AppCompatActivity {
                     .setMax(SettingsLimits[i][1])
                     .thumbProgressStay(true)
                     .build();
-
             ((LinearLayout) findViewById(R.id.SettingsSeekBars)).addView(SettingsSeekBars[i]);
         }
         ChangeSettingsPositionsTo(ReadSettingsFromDatabase());
@@ -355,7 +356,8 @@ public class MainActivity extends AppCompatActivity {
         //Removing previous view
         if (ModelView.getChildCount() >0 )
             ModelView.removeAllViews();
-
+        //ModelView.getBackgroundTintList()
+        ModelView.setBackgroundColor(Color.WHITE);
         //Declaring TempVariables
         TextView TempTextView;
         LinearLayout TempLayout;
@@ -367,6 +369,8 @@ public class MainActivity extends AppCompatActivity {
             TempLayout = new LinearLayout(getApplicationContext());
             TempLayout.setOrientation(LinearLayout.VERTICAL);
             TempSwitchForLayout = new Switch(getApplicationContext());
+            TempSwitchForLayout.setTextColor(Color.BLACK);
+            TempSwitchForLayout.setBackgroundColor(Color.LTGRAY);
             TempSwitchForLayout.setChecked(true);
             TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[0]
                     + ": " + Model.ImageNames[i]);
@@ -381,12 +385,15 @@ public class MainActivity extends AppCompatActivity {
 
             ModelView.addView(TempSwitchForLayout);
             ModelView.addView(TempLayout);
+            TempSwitchForLayout.setChecked(false);
             DrawALine(ModelView);
         }
         //Parameters IndicatorSeekBars
         TempLayout = new LinearLayout(getApplicationContext());
         TempLayout.setOrientation(LinearLayout.VERTICAL);
         TempSwitchForLayout = new Switch(getApplicationContext());
+        TempSwitchForLayout.setTextColor(Color.BLACK);
+        TempSwitchForLayout.setBackgroundColor(Color.LTGRAY);
         TempSwitchForLayout.setChecked(true);
         TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[1]);
         TempSwitchForLayout.setTextSize(18);
@@ -395,6 +402,7 @@ public class MainActivity extends AppCompatActivity {
 
         //--- Sampling time
         TempTextView = new TextView(getApplicationContext());
+        TempTextView.setTextColor(Color.BLACK);
         TempTextView.setText(getString(R.string.SAMPLING_TIME)+" = "
                 +SettingsSeekBars[0].getProgress()
                 +" ms");
@@ -412,12 +420,14 @@ public class MainActivity extends AppCompatActivity {
                     .thumbProgressStay(true)
                     .build();
             TempTextView = new TextView(getApplicationContext());
+            TempTextView.setTextColor(Color.BLACK);
             if (Model.Parameters[i].Name.contains(">>")) {
                 String[] TempTitles = Model.Parameters[i].Name.split(">>");
                 TempTextView.setText(TempTitles[0]);
                 TempTextView.setTypeface(null, Typeface.BOLD);
                 TempLayout.addView(TempTextView);
                 TempTextView = new TextView(getApplicationContext());
+                TempTextView.setTextColor(Color.BLACK);
                 TempTextView.setText(TempTitles[1]);
             } else
                 TempTextView.setText(Model.Parameters[i].Name);
@@ -427,6 +437,7 @@ public class MainActivity extends AppCompatActivity {
 
         ModelView.addView(TempSwitchForLayout);
         ModelView.addView(TempLayout);
+        TempSwitchForLayout.setChecked(false);
         DrawALine(ModelView);
 
         //Function generator
@@ -436,10 +447,14 @@ public class MainActivity extends AppCompatActivity {
             TempLayout = new LinearLayout(getApplicationContext());
             TempLayout.setOrientation(LinearLayout.VERTICAL);
             TempSwitchForLayout = new Switch(getApplicationContext());
+            TempSwitchForLayout.setTextColor(Color.BLACK);
+            TempSwitchForLayout.setBackgroundColor(Color.LTGRAY);
             TempSwitchForLayout.setChecked(true);
             TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[2]
                     + ": "
-                    + Model.SignalGenerators[i]);
+                    + Model.SignalGenerators[i]
+                    + "=0"
+            );
             TempSwitchForLayout.setTextSize(18);
             TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
             TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
@@ -458,6 +473,7 @@ public class MainActivity extends AppCompatActivity {
             //Floats
             for (int j=0; j<5; j++) {
                 TempTextView = new TextView(getApplicationContext());
+                TempTextView.setTextColor(Color.BLACK);
                 TempTextView.setText(getResources().getStringArray(R.array.SIGNAL_GENERATOR_PARAMETERS)[j]);
                 IndicatorSeekBar TempSeekBar = new IndicatorSeekBar.Builder(getApplicationContext())
                         .setMin(GeneratedSignals[i].MinMaxDefaultsForFloats[j][0])
@@ -482,6 +498,7 @@ public class MainActivity extends AppCompatActivity {
 
             ModelView.addView(TempSwitchForLayout);
             ModelView.addView(TempLayout);
+            TempSwitchForLayout.setChecked(false);
             DrawALine(ModelView);
         }
 
@@ -492,6 +509,8 @@ public class MainActivity extends AppCompatActivity {
             TempLayout = new LinearLayout(getApplicationContext());
             TempLayout.setOrientation(LinearLayout.VERTICAL);
             TempSwitchForLayout = new Switch(getApplicationContext());
+            TempSwitchForLayout.setTextColor(Color.BLACK);
+            TempSwitchForLayout.setBackgroundColor(Color.LTGRAY);
             TempSwitchForLayout.setChecked(true);
             TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[3]
                     + " " +((int)i+1) + ": "
@@ -501,6 +520,13 @@ public class MainActivity extends AppCompatActivity {
             TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
 
             ModelGraphs[i] = new GraphView(getApplicationContext());
+            ModelGraphs[i].getGridLabelRenderer().setGridColor(Color.BLACK);
+            ModelGraphs[i].getGridLabelRenderer().setHorizontalLabelsColor(Color.BLACK);
+            ModelGraphs[i].getGridLabelRenderer().setVerticalLabelsColor(Color.BLACK);
+            ModelGraphs[i].getGridLabelRenderer().setHorizontalAxisTitleColor(Color.BLACK);
+            ModelGraphs[i].getGridLabelRenderer().setVerticalAxisTitleColor(Color.BLACK);
+            ModelGraphs[i].getGridLabelRenderer().setVerticalLabelsSecondScaleColor(Color.BLACK);
+
             for (int j=0; j<Model.Figures[i].Trajectories.length; j++) {
                 LineGraphSeries<DataPoint> GraphSeries = new LineGraphSeries<>();
                 GraphSeries.setColor(ColorTable[j]);
@@ -526,6 +552,7 @@ public class MainActivity extends AppCompatActivity {
 
             ModelView.addView(TempSwitchForLayout);
             ModelView.addView(TempLayout);
+            TempSwitchForLayout.setChecked(false);
             DrawALine(ModelView);
         }
         DrawALine(ModelView);
