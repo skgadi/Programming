@@ -582,6 +582,7 @@ public class MainActivity extends AppCompatActivity {
                         + a * E[0]
                         + b * E[1]
                         + c * E[2];
+                OutSignals[0] = Generated[0][0];
                 return OutSignals;
             }
 
@@ -611,9 +612,9 @@ public class MainActivity extends AppCompatActivity {
         Model.Images = new int[2];
         Model.Images[0] = R.drawable.pid;
         Model.Images[1] = R.drawable.pid;
-        Model.ImageNames = new String[2];
+        Model.ImageNames = new String[1];
         Model.ImageNames[0] = "Closed loop system";
-        Model.ImageNames[1] = "Reference Value details";
+        //Model.ImageNames[1] = "Reference Value details";
         Model.Ports = new String[2];
         Model.Ports[0] = "Control signal u(t)";
         Model.Ports[1] = "Plant's output y(t)";

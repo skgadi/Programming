@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2017.7.31)  8 FEB 2018 10:26
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2017.7.31)  18 FEB 2018 20:19
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -1082,10 +1082,10 @@ exlive/2017/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb><c:/texlive/2017
 /texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><c:/texlive/2017/texmf-dist
 /fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2017/texmf-dist/fonts/ty
 pe1/public/amsfonts/cm/cmsy7.pfb>
-Output written on figures.pdf (2 pages, 93684 bytes).
+Output written on figures.pdf (2 pages, 94059 bytes).
 PDF statistics:
- 80 PDF objects out of 1000 (max. 8388607)
- 64 compressed objects within 1 object stream
+ 83 PDF objects out of 1000 (max. 8388607)
+ 67 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  23 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -4,10 +4,8 @@
     <modules>
       <module fileurl="file://D:\GitHub\Programming\Android\ControlToolbox\Android-ControlToolbox.iml" filepath="D:\GitHub\Programming\Android\ControlToolbox\Android-ControlToolbox.iml" />
       <module fileurl="file://$PROJECT_DIR$/ControlToolbox.iml" filepath="$PROJECT_DIR$/ControlToolbox.iml" />
-      <module fileurl="file://D:\GitHub\Programming\Android\ControlToolbox\ControlToolbox.iml" filepath="D:\GitHub\Programming\Android\ControlToolbox\ControlToolbox.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/usbSerialForAndroid/usbSerialForAndroid.iml" filepath="$PROJECT_DIR$/usbSerialForAndroid/usbSerialForAndroid.iml" />
-      <module fileurl="file://D:\GitHub\Programming\Android\ControlToolbox\usbSerialForAndroid\usbSerialForAndroid.iml" filepath="D:\GitHub\Programming\Android\ControlToolbox\usbSerialForAndroid\usbSerialForAndroid.iml" />
     </modules>
   </component>
 </project>

@@ -13,17 +13,26 @@ enum SignalType {
 }
 public class FunctionGenerator {
     public SignalType Type;
-    public float Frequency=50;
-    public float MaximumAmplitude=0;
-    public float StartAt=0;
-    public float DutyCycle=50;
-    public float OffSet=0;
+    public float Frequency;
+    public float MaximumAmplitude;
+    public float StartAt;
+    public float DutyCycle;
+    public float OffSet;
     public float Time;
-    public boolean Compliment = false;
+    public boolean Compliment;
     public float[][] MinMaxDefaultsForFloats = {
-            {0, 100, 50}, {0, 5, 0}, {0, 10, 0}, {0, 100, 50}, {-5, 5, 0}
+            {0, 5, 2.5f}, {0, 5, 0}, {0, 10, 0}, {0, 100, 50}, {-5, 5, 0}
     };
-
+    public FunctionGenerator() {
+        Type = SignalType.STEP;
+        Frequency = 2.5f;//MinMaxDefaultsForFloats[0][2];
+        MaximumAmplitude = MinMaxDefaultsForFloats[1][2];
+        StartAt = MinMaxDefaultsForFloats[2][2];
+        DutyCycle = MinMaxDefaultsForFloats[3][2];
+        OffSet = MinMaxDefaultsForFloats[4][2];
+        Time = 0;
+        Compliment = false;
+    }
     public void SetType (SignalType type) {
         Type = type;
     }
@@ -111,9 +120,9 @@ public class FunctionGenerator {
     }
     public float GenStep() {
         if (Time>=StartAt)
-            return ((!Compliment) ? 1 : -1) * MaximumAmplitude + OffSet;
+            return ((!Compliment) ? 1f : -1f) * MaximumAmplitude + OffSet;
         else
-            return ((Compliment) ? 1 : -1) * MaximumAmplitude + OffSet;
+            return 0;
     }
     public float GenSine() {
         if (Time>=StartAt)

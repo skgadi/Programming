@@ -79,7 +79,7 @@
 \begin{figure}
 	\centering
 	\begin{tikzpicture}[node distance = 10mm, auto]
-		\node (Reference) [] {Reference ($R$)};
+		\node (Reference) [align=center] {Reference \\($R=R_1+R_2+R_3$)};
 		\node (SummingPoint) [draw,circle, thick, right = of Reference]  {+};
 		\node (Control) [block, text width = 2cm, right = of SummingPoint] {Control ($C$)};
 		\node (Plant) [block, text width = 2cm, right = of Control] {Plant ($G$)};
