@@ -1,15 +1,11 @@
 package com.skgadi.controltoolbox;
 
-import android.app.PendingIntent;
 import android.content.ContentValues;
-import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.hardware.usb.UsbDeviceConnection;
-import android.hardware.usb.UsbManager;
+import android.hardware.usb.UsbDevice;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -27,11 +23,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.hoho.android.usbserial.driver.ProbeTable;
-import com.hoho.android.usbserial.driver.UsbSerialDriver;
-import com.hoho.android.usbserial.driver.UsbSerialPort;
-import com.hoho.android.usbserial.driver.UsbSerialProber;
-import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.LegendRenderer;
 import com.jjoe64.graphview.series.DataPoint;
@@ -42,8 +33,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import me.aflak.arduino.Arduino;
+import me.aflak.arduino.ArduinoListener;
 
 
 enum SCREENS {
@@ -64,7 +56,6 @@ enum SIMULATION_STATUS {
 
 public class MainActivity extends AppCompatActivity {
 
-    public LineChart chart;
     private LinearLayout.LayoutParams DefaultLayoutParams;
     private LinearLayout[] Screens;
     SCREENS PresentScreen = SCREENS.MAIN_SCREEN;
@@ -103,13 +94,14 @@ public class MainActivity extends AppCompatActivity {
 
 
     //----- Communication and other from prev program
-    protected UsbManager manager;
-    ProbeTable customTable;
+    /*protected UsbManager manager;
+    ProbeTable customTable;*/
     //UsbSerialProber prober; // Not required for arduino
-    List<UsbSerialDriver> drivers;
-    UsbSerialDriver driver;
-    UsbDeviceConnection connection;
-    private UsbSerialPort port;
+//    List<UsbSerialDriver> drivers;
+//    UsbSerialDriver driver;
+//    UsbDeviceConnection connection;
+//    private UsbSerialPort port;
+    public Arduino arduino;
     boolean DeviceConnected = false;
     SIMULATION_STATUS SimulationState;
 
@@ -183,6 +175,39 @@ public class MainActivity extends AppCompatActivity {
             ButtonForMainScreen.setOnClickListener(new OnMainWindowButton(i));
             Screens[SCREENS.MAIN_SCREEN.ordinal()].addView(ButtonForMainScreen);
         }
+        //--- USB Connection
+        arduino = new Arduino(getApplicationContext(), 115200);
+
+        arduino.setArduinoListener(new ArduinoListener() {
+            @Override
+            public void onArduinoAttached(UsbDevice device) {
+                arduino.open(device);
+                DeviceConnected = false;
+            }
+
+            @Override
+            public void onArduinoDetached() {
+                DeviceConnected = false;
+            }
+
+            @Override
+            public void onArduinoMessage(byte[] bytes) {
+                //((TextView)findViewById(R.id.textView)).setText("Message");
+                DataRecUpdateForHex(bytes);
+            }
+
+            @Override
+            public void onArduinoOpened() {
+                DeviceConnected = true;
+            }
+
+            @Override
+            public void onUsbPermissionDenied() {
+                arduino.reopen();
+                DeviceConnected = false;
+            }
+        });
+
     }
 
     private void GenerateSettingsView () {
@@ -328,8 +353,9 @@ public class MainActivity extends AppCompatActivity {
         Screens[PresentScreen.ordinal()].setVisibility(View.VISIBLE);
         if ((Screen == SCREENS.MAIN_SCREEN) || (Screen == SCREENS.SETTINGS))
             ChangeStateToSimulateDisabled();
-        else
+        else {
             ChangeStateToNotSimulating();
+        }
         if (Screen == SCREENS.MAIN_SCREEN)
             setTitle(getResources().getString(R.string.app_name));
         else
@@ -582,7 +608,7 @@ public class MainActivity extends AppCompatActivity {
                         + a * E[0]
                         + b * E[1]
                         + c * E[2];
-                OutSignals[0] = Generated[0][0];
+                OutSignals[0] = Generated[2][0];
                 return OutSignals;
             }
 
@@ -609,9 +635,9 @@ public class MainActivity extends AppCompatActivity {
         Model.NoOfPastGeneratedValuesRequired = 2;
         Model.OutPut = new float[1];
         Model.OutPut[0]=0;
-        Model.Images = new int[2];
+        Model.Images = new int[1    ];
         Model.Images[0] = R.drawable.pid;
-        Model.Images[1] = R.drawable.pid;
+        //Model.Images[1] = R.drawable.pid;
         Model.ImageNames = new String[1];
         Model.ImageNames[0] = "Closed loop system";
         //Model.ImageNames[1] = "Reference Value details";
@@ -678,9 +704,10 @@ public class MainActivity extends AppCompatActivity {
                             Toast.LENGTH_SHORT).show();
                 }
                 if (SimulationState == SIMULATION_STATUS.OFF) {
-                    if (ConnectUSB() == 2) {
+                    if (DeviceConnected) {
                         ChangeStateToSimulating();
-                        SimulateParams SParams = new SimulateParams(port,
+                        SimulateParams SParams = new SimulateParams(
+                                //port,
                                 Model,
                                 GeneratedSignals,
                                 ModelParamsSeekBars,
@@ -713,7 +740,7 @@ public class MainActivity extends AppCompatActivity {
     }
     //--- USB Programming
     private int ConnectUSB () {
-        try {
+        /*try {
             manager = (UsbManager) getSystemService(Context.USB_SERVICE);
             //drivers = prober.findAllDrivers(manager); // Not required for arduino
             drivers =  UsbSerialProber.getDefaultProber().findAllDrivers(manager);;
@@ -762,10 +789,11 @@ public class MainActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT).show();
             e.printStackTrace();
             return 0;
-        }
+        }*/
+        return 2;
     }
     void DisconnectUSB () {
-        try {
+        /*try {
             port.close();
             Toast.makeText(MainActivity.this,
                     getResources().getStringArray(R.array.TOASTS)[5],
@@ -775,28 +803,91 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this,
                     getResources().getStringArray(R.array.TOASTS)[6],
                     Toast.LENGTH_SHORT).show();
-        }
+        }*/
     }
 
+    //mserialio
+    float[] RecData = new float[3];
+    boolean Purged = true;
+    boolean isValidRead=false;
+    String PrevString="";
+
+    //private ExecutorService mExecutor;// = Executors.newSingleThreadExecutor();
+    //private SerialInputOutputManager mSerialIoManager;
+    /*private final SerialInputOutputManager.Listener mListener =
+            new SerialInputOutputManager.Listener() {
+
+                @Override
+                public void onRunError(Exception e) {
+                    //Log.d("USBRec", "Runner stopped.");
+                }
+
+                @Override
+                public void onNewData(final byte[] data) {
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            //DataRecUpdateForHex(data);
+                            DataRecUpdate(data);
+                        }
+                    });
+                }
+            };*/
+    private void PurgeReceivedBuffer() {
+        try {
+            Thread.sleep(10);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        Purged = true;
+    }
+    private void DataRecUpdate (byte[] data) {
+        //Log.i("Timing", "Previous String: " + PrevString);
+        String Rec = PrevString + new String(data);
+        Log.i("Timing", "Received String: " + Rec);
+        Log.i("Timing", "Last Digit"+Rec.substring(Rec.length()-1));/**/
+        if (Rec.substring(Rec.length()-1).contains("E")) {
+            isValidRead = true;
+            PrevString = "";
+            Rec = Rec.substring(0, Rec.indexOf("E"));
+            //Log.i("USBRec", "Received String with validation: " + Rec);
+            String[] RecStrs = Rec.split(";");
+            for (int i=0; i<RecStrs.length; i++) {
+                RecData[i] = Float.parseFloat(RecStrs[i])/1024*5;
+            }
+        } else if (Purged)
+            PrevString = Rec;
+    }
+    private void DataRecUpdateForHex (byte[] data) {
+        isValidRead = true;
+        if (data.length==2) {
+            short TempVal = (short) ((data[0] & 0xff) | (data[1] << 8));
+            RecData[0] = PutBetweenRange(TempVal/1024f*5f, -5, 5);
+            Log.i("Timing", "New Data: " + TempVal);
+        } else {
+            isValidRead = false;
+            Log.i("Timing", "Received data size: " + data.length);
+        }
+    }
     /*
     Async task for implementing algorithms in real time
     */
     private static class SimulateParams {
-        UsbSerialPort Port;
+        //UsbSerialPort Port;
         SimulationView SimulationModel;
         FunctionGenerator[] GeneratedSignals;
         IndicatorSeekBar[] ModelParamsSeekBars;
         GraphView[] ModelGraphs;
         SCREENS Screen;
         SimulateParams (
-                UsbSerialPort port,
+                //UsbSerialPort port,
                 SimulationView simulationModel,
                 FunctionGenerator[] generatedSignals,
                 IndicatorSeekBar[] modelParamsSeekBars,
                 GraphView[] modelGraphs,
                 SCREENS screen
                 ) {
-            Port = port;
+            //Port = port;
             SimulationModel = simulationModel;
             GeneratedSignals = generatedSignals;
             ModelParamsSeekBars = modelParamsSeekBars;
@@ -804,6 +895,14 @@ public class MainActivity extends AppCompatActivity {
             Screen = screen;
         }
     }
+    public float PutBetweenRange (float value, float MinValue, float MaxValue) {
+        if (value>MaxValue)
+            return MaxValue;
+        if (value<MinValue)
+            return MinValue;
+        return value;
+    }
+
     private static class ProgressParams {
         float[] Values;
         ProgressParams (float[] values) {
@@ -811,7 +910,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     private class Simulate extends AsyncTask <SimulateParams, ProgressParams, Integer> {
-        UsbSerialPort port;
+        //UsbSerialPort port;
         float[][] Input;
         float[][] Output;
         float[][] PreparedSignals;
@@ -825,82 +924,10 @@ public class MainActivity extends AppCompatActivity {
 
         boolean IsProgressFirstIteration=true;
         DataPoint[] DataPoints;
-        float[] RecData = new float[3];
-        boolean isValidRead=false;
-        String PrevString="";
-        boolean Purged = false;
+        boolean WaitedTS = true;
         int MissedTicks = 0;
 
 
-        private ExecutorService mExecutor = Executors.newSingleThreadExecutor();
-        private SerialInputOutputManager mSerialIoManager;
-        private final SerialInputOutputManager.Listener mListener =
-                new SerialInputOutputManager.Listener() {
-
-                    @Override
-                    public void onRunError(Exception e) {
-                        //Log.d("USBRec", "Runner stopped.");
-                    }
-
-                    @Override
-                    public void onNewData(final byte[] data) {
-                        DataRecUpdate(data);
-                        /*MainActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                MainActivity.this.updateReceivedData(data);
-                            }
-                        });*/
-                    }
-                };
-        private void PurgeReceivedBuffer() {
-            try {
-                Thread.sleep(10);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            Purged = true;
-        }
-        private void DataRecUpdate (byte[] data) {
-            //Log.i("USBRec", "Previous String: " + PrevString);
-            String Rec = PrevString + new String(data);
-            /*Log.i("USBRec", "Received String: " + Rec);
-            Log.i("USBRec", "Last Digit"+Rec.substring(Rec.length()-1));*/
-            if (Rec.substring(Rec.length()-1).contains("E")) {
-                isValidRead = true;
-                PrevString = "";
-                Rec = Rec.substring(0, Rec.indexOf("E"));
-                //Log.i("USBRec", "Received String with validation: " + Rec);
-                String[] RecStrs = Rec.split(";");
-                for (int i=0; i<RecStrs.length; i++) {
-                    RecData[i] = Float.parseFloat(RecStrs[i])/1024*5;
-                }
-                /*Log.i("USBRec", "Size: "+RecStrs.length);
-                Log.i("USBRec", RecStrs [0]);
-                Log.i("USBRec", RecStrs [1]);
-                Log.i("USBRec", RecStrs [2]);*/
-            } else if (Purged)
-                PrevString = Rec;
-            //readCount++;
-        }
-        private void DataRecUpdateForHex (byte[] data) {
-            for (int i=0; i<data.length; i++)
-                Log.i("USBRec", String.format("Before prepending: %02X", data[i]));
-            String Rec = PrevString + new String(data);
-
-
-            for (int i=0; i<Rec.length(); i++)
-                Log.i("USBRec", String.format("After prepending: %02X", Rec.getBytes()[i]));
-
-            if ((Rec.length()==7) && (Rec.substring(Rec.length()-1).contentEquals("E"))) {
-                isValidRead = true;
-                PrevString = "";
-                for (int i=0; i<3; i++) {
-                    //RecData[i] = ConvertBytesToInt(Rec.getBytes()[i+2],Rec.getBytes()[i + 1]);//---this is wrong
-                }
-            } else
-                PrevString = Rec;
-        }
 
         @Override
         protected Integer doInBackground(SimulateParams... Params) {
@@ -909,24 +936,37 @@ public class MainActivity extends AppCompatActivity {
             DataPoints = new DataPoint[1000];
 
             ProgressParams PParams = new ProgressParams(PValues);
-            port = Params[0].Port;
-
-            mSerialIoManager = new SerialInputOutputManager(port, mListener);
-            mExecutor.submit(mSerialIoManager);
-            PurgeReceivedBuffer();
+            //port = Params[0].Port;
+            //mExecutor = Executors.newSingleThreadExecutor();
+            //mSerialIoManager = new SerialInputOutputManager(port, mListener);
+            //mExecutor.submit(mSerialIoManager);
+            //PurgeReceivedBuffer();
 
             long StartTime = System.currentTimeMillis();
             float TestOutVal0=-5;
             int TestOutVal1=0;
+            final byte[] PKT_STOP_SNIF = { (byte) 0xFB, '\n' };
 
+            Log.i("Timing", "Started work");
 
-            while(!this.isCancelled()) {
-                boolean RecedData = false;
-                do {
-                    if (isValidRead) {
+            isValidRead = true;
+            while(!this.isCancelled() || !DeviceConnected) {
+                int LoopCycle = 0;
+                while ((((int)(System.currentTimeMillis() - StartTime))
+                                %(Math.round(Model.T_S*1000))) != 0) {
+                    if (isValidRead && WaitedTS) {
                         isValidRead  = false;
-                        RecedData = true;
+                        WaitedTS = false;
                         Time = (System.currentTimeMillis()-StartTime)/1000.0f;
+                        try {
+                            WriteToUSB(Output[0][0]);
+                            MissedTicks=0;
+                            Log.i("Timing", "Write success");
+                        } catch (Exception e) {
+                            MissedTicks++;
+                            Log.i("Timing", "Writing error");
+                            e.printStackTrace();
+                        }
                         for (int i=0; i<Input.length; i++)
                             Input[i] = PutElementToFIFO(Input[i], RecData[i]);
                         for (int i = 0; i< PreparedSignals.length; i++)
@@ -940,32 +980,21 @@ public class MainActivity extends AppCompatActivity {
                         );
                         for (int i=0; i<TempOutput.length; i++)
                             Output[i] = PutElementToFIFO(Output[i], PutBetweenRange(TempOutput[i], -5, 5));
-
-                        /*PValues[0]  = (System.currentTimeMillis()-StartTime)/1000.0f;
-                        PValues[1] = RecData[0];
-                        PValues[2]  = (System.currentTimeMillis()-StartTime)/1000.0f;
-                        PValues[3] = RecData[1];
-                        PValues[4]  = (System.currentTimeMillis()-StartTime)/1000.0f;
-                        PValues[5] = RecData[2];*/
                         publishProgress(PParams);
                     }
-                } while ((((System.currentTimeMillis() - StartTime))%10) != 0);
-                if (RecedData)
-                    Log.i("Timing", String.valueOf(PValues[0]));
-
-                try {
-                    WriteToUSB(Output[0][0]);
-                    Log.i("Timing", String.valueOf(Output[0][0]));
-                    //Thread.sleep(1);
-                    MissedTicks=0;
-                } catch (Exception e) {
-                    Log.i("USBRec", "Error found");
-                    e.printStackTrace();
-                    if (++MissedTicks >=5) {
-                        this.cancel(true);
+                    if (LoopCycle==0) {
                     }
+                    LoopCycle++;
                 }
-            }/**/
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if (MissedTicks>=5)
+                    this.cancel(true);
+                WaitedTS = true;
+            }
             return null;
         }
 
@@ -985,26 +1014,10 @@ public class MainActivity extends AppCompatActivity {
                                     Time, SignalsToPlot[Iteration]), true,
                             ReadSettingsPositions()[Arrays.asList(SettingsDBColumns)
                                     .indexOf("ChartHistoryLength")]
-                                    );
+                    );
                     Iteration++;
                 }
             }
-            /*GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
-            GraphSeries0.appendData(new DataPoint(Params[0].Values[0], Params[0].Values[1]), true, 100);
-            GraphSeries1.appendData(new DataPoint(Params[0].Values[2], Params[0].Values[3]), true, 100);
-            GraphSeries2.appendData(new DataPoint(Params[0].Values[4], Params[0].Values[5]), true, 100);
-            if (IsProgressFirstIteration) {
-                IsProgressFirstIteration=false;
-                graph.addSeries(GraphSeries0);
-                //graph.addSeries(GraphSeries1);
-                //graph.addSeries(GraphSeries2);
-                graph.getViewport().setScalable(true);
-                graph.getViewport().setScalableY(true);
-                graph.getViewport().setScrollable(true);
-                graph.getViewport().setScrollableY(true);
-                graph.getViewport().setMinX(0);
-                graph.getViewport().setMaxX(5);
-            }*/
         }
 
         @Override
@@ -1032,34 +1045,6 @@ public class MainActivity extends AppCompatActivity {
                     ((LineGraphSeries<DataPoint>)(ModelGraphs[i].getSeries().get(j))).resetData(new DataPoint[0]);
                 }
             }
-
-            /*GraphView graph = (GraphView) findViewById(R.id.pid_chart00);
-            graph.removeAllSeries();
-            IsProgressFirstIteration = true;
-            GraphSeries0.setColor(Color.parseColor("#ff0000"));
-            GraphSeries1.setColor(Color.parseColor("#00ff00"));
-            GraphSeries2.setColor(Color.parseColor("#0000ff"));*/
-
-        }
-        @Override
-        protected void onPostExecute(Integer result) {
-            Toast.makeText(getApplicationContext(),
-                    "Waiting to exit...",
-                    Toast.LENGTH_SHORT).show();
-            while (!mExecutor.isShutdown()) {
-
-            }
-            Toast.makeText(getApplicationContext(),
-                    "Finished",
-                    Toast.LENGTH_SHORT).show();
-            ChangeStateToNotSimulating();
-        }
-        protected float PutBetweenRange (float value, float MinValue, float MaxValue) {
-            if (value>MaxValue)
-                return MaxValue;
-            if (value<MinValue)
-                return MinValue;
-            return value;
         }
         protected float[] GetParameters () {
             float[] ParameterValues = new float[Model.Parameters.length];
@@ -1084,7 +1069,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(),
                     "Cancelled...",
                     Toast.LENGTH_SHORT).show();
-            if (mSerialIoManager != null) {
+            /*if (mSerialIoManager != null) {
                 mSerialIoManager.stop();
                 mSerialIoManager = null;
             }
@@ -1094,7 +1079,7 @@ public class MainActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT).show();
             while (!mExecutor.isShutdown()) {
 
-            }
+            }*/
             DisconnectUSB();
             Toast.makeText(getApplicationContext(),
                     "Finished",
@@ -1102,13 +1087,15 @@ public class MainActivity extends AppCompatActivity {
             ChangeStateToNotSimulating();
         }
         private void WriteToUSB(Float Value) throws IOException {
-            port.write(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)),10);
+            arduino.send(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)));
+            //port.write(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)),10);//Math.round(Model.T_S*1000f));
+            //mSerialIoManager.writeAsync("AA".getBytes());
         }
         private int ConvertFloatToIntForAO (Float OutFloat) {
             return Math.round(OutFloat*51);
         }
         private byte[] ConvertToIntTSendBytes (int Out) {
-            byte[] OutBytes= {0,0};
+            byte[] OutBytes= {0,0,0x10};
             if (Math.abs(Out)>=255)
                 OutBytes[0] = (byte) 0xff;
             else
@@ -1122,16 +1109,3 @@ public class MainActivity extends AppCompatActivity {
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
