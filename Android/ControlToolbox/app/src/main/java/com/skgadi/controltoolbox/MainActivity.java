@@ -193,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onArduinoMessage(byte[] bytes) {
                 //((TextView)findViewById(R.id.textView)).setText("Message");
-                DataRecUpdateForHex(bytes);
+                DoThisWhenReceivedDataFromUSB(bytes);
             }
 
             @Override
@@ -208,6 +208,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+    public void DoThisWhenReceivedDataFromUSB (final byte[] bytes) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                //DataRecUpdateForHex(bytes);
+                DataRecUpdate(bytes);
+            }
+        });
+    }
+    public void SendToUSB (final byte[] bytes) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                arduino.send(bytes);
+            }
+        });
     }
 
     private void GenerateSettingsView () {
@@ -808,7 +825,7 @@ public class MainActivity extends AppCompatActivity {
 
     //mserialio
     float[] RecData = new float[3];
-    boolean Purged = true;
+    boolean Purged = false;
     boolean isValidRead=false;
     String PrevString="";
 
@@ -846,26 +863,44 @@ public class MainActivity extends AppCompatActivity {
         String Rec = PrevString + new String(data);
         Log.i("Timing", "Received String: " + Rec);
         Log.i("Timing", "Last Digit"+Rec.substring(Rec.length()-1));/**/
-        if (Rec.substring(Rec.length()-1).contains("E")) {
+        if (Rec.contains("E")) {
             isValidRead = true;
             PrevString = "";
             Rec = Rec.substring(0, Rec.indexOf("E"));
             //Log.i("USBRec", "Received String with validation: " + Rec);
             String[] RecStrs = Rec.split(";");
             for (int i=0; i<RecStrs.length; i++) {
-                RecData[i] = Float.parseFloat(RecStrs[i])/1024*5;
+                try {
+                    RecData[i] = Float.parseFloat(RecStrs[i]) / 1024 * 5;
+                } catch (Exception e) {
+                    Log.i("Timing", "Error in parse");
+                }
             }
         } else if (Purged)
             PrevString = Rec;
     }
+    byte PrevByte;
+    boolean IsPrevByteSet=true;
     private void DataRecUpdateForHex (byte[] data) {
-        isValidRead = true;
-        if (data.length==2) {
+        if (data.length>=2) {
             short TempVal = (short) ((data[0] & 0xff) | (data[1] << 8));
             RecData[0] = PutBetweenRange(TempVal/1024f*5f, -5, 5);
             Log.i("Timing", "New Data: " + TempVal);
-        } else {
-            isValidRead = false;
+            isValidRead = true;
+        } /*else if (data.length==1) {
+            if (IsPrevByteSet) {
+                IsPrevByteSet = false;
+                byte UpdatedData[] = {PrevByte, data[0]};
+                short TempVal = (short) ((UpdatedData[0] & 0xff) | (UpdatedData[1] << 8));
+                RecData[0] = PutBetweenRange(TempVal/1024f*5f, -5, 5);
+                Log.i("Timing", "Found second byte making a total value: " + TempVal);
+                isValidRead = true;
+            } else {
+                IsPrevByteSet = true;
+                PrevByte = data[0];
+                Log.i("Timing", "Found first byte.");
+            }
+        }*/ else {
             Log.i("Timing", "Received data size: " + data.length);
         }
     }
@@ -915,6 +950,7 @@ public class MainActivity extends AppCompatActivity {
         float[][] Output;
         float[][] PreparedSignals;
         float Time;
+        float[] ReadTimes = {0,0,0,0};
 
 
 
@@ -945,28 +981,84 @@ public class MainActivity extends AppCompatActivity {
             long StartTime = System.currentTimeMillis();
             float TestOutVal0=-5;
             int TestOutVal1=0;
+            int NoOfIterations=0;
+            int NotOfTimesSend = 1;
+            float TSPresent = 0;
+            float TS1Delay = 0;
+            float TS2Delay = 0;
+            float TS3Delay = 0;
             final byte[] PKT_STOP_SNIF = { (byte) 0xFB, '\n' };
 
             Log.i("Timing", "Started work");
 
             isValidRead = true;
+            long LastWrittenTime=0;
+
             while(!this.isCancelled() || !DeviceConnected) {
-                int LoopCycle = 0;
+                if (!Purged)
+                    PurgeReceivedBuffer();
+                Time = (System.currentTimeMillis()-StartTime)/1000.0f;
+                if (((((int)(System.currentTimeMillis() - StartTime))
+                        %Math.round(Model.T_S*1000)) == 0) && (System.currentTimeMillis() != LastWrittenTime)) {
+                    LastWrittenTime = System.currentTimeMillis();
+                    float[] TempOutput = Model.RunAlgorithms(
+                            GetParameters(),
+                            PreparedSignals,
+                            Input,
+                            Output
+                    );
+                    for (int i=0; i<TempOutput.length; i++)
+                        Output[i] = PutElementToFIFO(Output[i], PutBetweenRange(TempOutput[i], -5, 5));
+                    for (int i=0; i<NotOfTimesSend; i++)
+                        WriteToUSB(Output[0][0]);
+                    WaitedTS = false;
+                    Log.i("Timing", "T_S: "+Math.round(Model.T_S*1000));
+                }
+                if (isValidRead) {
+                    isValidRead  = false;
+                    PutElementToFIFO(ReadTimes, Time);
+                    float MovingAverageTS=0;
+                    for (int i=0; i<(ReadTimes.length-1); i++)
+                        MovingAverageTS = MovingAverageTS + (ReadTimes[i]-ReadTimes[i+1]);
+                    MovingAverageTS = MovingAverageTS/(ReadTimes.length-1);
+                    if ((MovingAverageTS > 1.2*Model.T_S) && (NotOfTimesSend<10))
+                        NotOfTimesSend++;
+                    if ((MovingAverageTS < 0.8*Model.T_S) && (NotOfTimesSend>1))
+                        NotOfTimesSend--;
+                    Log.i("Timing", "TS past: " + ReadTimes[0] );
+                    Log.i("Timing", "TS present: " + ReadTimes[1]);
+                    Log.i("Timing", "Moving TS Average: " + MovingAverageTS );
+                    Log.i("Timing", "Number of times send write: " + NotOfTimesSend);/**/
+                    for (int i=0; i<Input.length; i++)
+                        Input[i] = PutElementToFIFO(Input[i], RecData[i]);
+                    for (int i = 0; i< PreparedSignals.length; i++)
+                        PreparedSignals[i] = PutElementToFIFO(PreparedSignals[i],
+                                GeneratedSignals[i].GetValue(Time));
+                    publishProgress(PParams);
+                }
+
+
+                /*int LoopCycle = 0;
+                boolean ReadAValidInThisCycle = false;
                 while ((((int)(System.currentTimeMillis() - StartTime))
                                 %(Math.round(Model.T_S*1000))) != 0) {
                     if (isValidRead && WaitedTS) {
                         isValidRead  = false;
                         WaitedTS = false;
+                        ReadAValidInThisCycle = true;
+                        //TS3Delay = TS2Delay;
+                        //TS2Delay = TS1Delay;
+                        TS1Delay = TSPresent;
+                        TSPresent = (System.currentTimeMillis()-StartTime)/1000.0f - Time;
+                        float MovingAverageTS = ((0 * TS3Delay) + (0 * TS2Delay) + TS1Delay + TSPresent) / 4f;
+                        if ((MovingAverageTS > 1.2*Model.T_S) && (NotOfTimesSend<10))
+                            NotOfTimesSend++;
+                        if ((MovingAverageTS < 0.8*Model.T_S) && (NotOfTimesSend>1))
+                            NotOfTimesSend--;
+                        Log.i("Timing", "Moving TS Average: " + MovingAverageTS );
+                        Log.i("Timing", "Number of times send write: " + NotOfTimesSend);
+
                         Time = (System.currentTimeMillis()-StartTime)/1000.0f;
-                        try {
-                            WriteToUSB(Output[0][0]);
-                            MissedTicks=0;
-                            Log.i("Timing", "Write success");
-                        } catch (Exception e) {
-                            MissedTicks++;
-                            Log.i("Timing", "Writing error");
-                            e.printStackTrace();
-                        }
                         for (int i=0; i<Input.length; i++)
                             Input[i] = PutElementToFIFO(Input[i], RecData[i]);
                         for (int i = 0; i< PreparedSignals.length; i++)
@@ -983,17 +1075,23 @@ public class MainActivity extends AppCompatActivity {
                         publishProgress(PParams);
                     }
                     if (LoopCycle==0) {
+                        try {
+                            for (int i=0; i<NotOfTimesSend; i++)
+                                WriteToUSB(Output[0][0]);
+                            MissedTicks = 0;
+                            Log.i("Timing", "Write success");
+                        } catch (Exception e) {
+                            MissedTicks++;
+                            Log.i("Timing", "Writing error");
+                            e.printStackTrace();
+                        }
                     }
                     LoopCycle++;
-                }
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
                 if (MissedTicks>=5)
                     this.cancel(true);
                 WaitedTS = true;
+                NoOfIterations++;*/
             }
             return null;
         }
@@ -1022,6 +1120,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute () {
+            Purged = false;
             Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0f;
             Input = new float[Model.NoOfInputs][Model.NoOfPastInputsRequired+1];
             Output = new float[Model.NoOfOutputs][Model.NoOfPastOuputsRequired+1];
@@ -1066,9 +1165,9 @@ public class MainActivity extends AppCompatActivity {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            Toast.makeText(getApplicationContext(),
+            /*Toast.makeText(getApplicationContext(),
                     "Cancelled...",
-                    Toast.LENGTH_SHORT).show();
+                    Toast.LENGTH_SHORT).show();*/
             /*if (mSerialIoManager != null) {
                 mSerialIoManager.stop();
                 mSerialIoManager = null;
@@ -1081,21 +1180,23 @@ public class MainActivity extends AppCompatActivity {
 
             }*/
             DisconnectUSB();
-            Toast.makeText(getApplicationContext(),
+            /*Toast.makeText(getApplicationContext(),
                     "Finished",
-                    Toast.LENGTH_SHORT).show();
+                    Toast.LENGTH_SHORT).show();*/
             ChangeStateToNotSimulating();
         }
-        private void WriteToUSB(Float Value) throws IOException {
+        private void WriteToUSB(Float Value) {
             arduino.send(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)));
+            Log.i("Timing", "Writing Command");
+            //SendToUSB(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)));
             //port.write(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)),10);//Math.round(Model.T_S*1000f));
             //mSerialIoManager.writeAsync("AA".getBytes());
         }
         private int ConvertFloatToIntForAO (Float OutFloat) {
-            return Math.round(OutFloat*51);
+            return Math.round(OutFloat*51f);
         }
         private byte[] ConvertToIntTSendBytes (int Out) {
-            byte[] OutBytes= {0,0,0x10};
+            byte[] OutBytes= {0,0,(byte)0x31};
             if (Math.abs(Out)>=255)
                 OutBytes[0] = (byte) 0xff;
             else
@@ -1104,6 +1205,7 @@ public class MainActivity extends AppCompatActivity {
                 OutBytes[1] = 0x00;
             else
                 OutBytes[1] = 0x01;
+            Log.i("Timing", String.format("ing string: 0x%2X, 0x%2X, 0x%2X", OutBytes[0], OutBytes[1], OutBytes[2]));
             return OutBytes;
         }
     }
