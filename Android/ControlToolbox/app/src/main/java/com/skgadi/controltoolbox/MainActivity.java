@@ -863,10 +863,9 @@ public class MainActivity extends AppCompatActivity {
         String Rec = PrevString + new String(data);
         Log.i("Timing", "Received String: " + Rec);
         Log.i("Timing", "Last Digit"+Rec.substring(Rec.length()-1));/**/
-        if (Rec.contains("E")) {
-            isValidRead = true;
+        if (Rec.contains("E") && Rec.contains("[") && Rec.contains("]")) {
             PrevString = "";
-            Rec = Rec.substring(0, Rec.indexOf("E"));
+            /*Rec = Rec.substring(0, Rec.indexOf("E"));
             //Log.i("USBRec", "Received String with validation: " + Rec);
             String[] RecStrs = Rec.split(";");
             for (int i=0; i<RecStrs.length; i++) {
@@ -875,6 +874,13 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     Log.i("Timing", "Error in parse");
                 }
+            }*/
+            try {
+                String result = Rec.substring(Rec.indexOf("[") + 1, Rec.indexOf("]"));
+                RecData[0] = Float.parseFloat(result) / 1024 * 5;
+                isValidRead = true;
+            } catch (Exception e) {
+                Log.i("Timing", "Error in parse");
             }
         } else if (Purged)
             PrevString = Rec;
@@ -1009,7 +1015,7 @@ public class MainActivity extends AppCompatActivity {
                     );
                     for (int i=0; i<TempOutput.length; i++)
                         Output[i] = PutElementToFIFO(Output[i], PutBetweenRange(TempOutput[i], -5, 5));
-                    for (int i=0; i<NotOfTimesSend; i++)
+                    //for (int i=0; i<NotOfTimesSend; i++)
                         WriteToUSB(Output[0][0]);
                     WaitedTS = false;
                     Log.i("Timing", "T_S: "+Math.round(Model.T_S*1000));
@@ -1205,7 +1211,7 @@ public class MainActivity extends AppCompatActivity {
                 OutBytes[1] = 0x00;
             else
                 OutBytes[1] = 0x01;
-            Log.i("Timing", String.format("ing string: 0x%2X, 0x%2X, 0x%2X", OutBytes[0], OutBytes[1], OutBytes[2]));
+            //Log.i("Timing", String.format("ing string: 0x%2X, 0x%2X, 0x%2X", OutBytes[0], OutBytes[1], OutBytes[2]));
             return OutBytes;
         }
     }
