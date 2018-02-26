@@ -625,7 +625,7 @@ public class MainActivity extends AppCompatActivity {
                         + a * E[0]
                         + b * E[1]
                         + c * E[2];
-                OutSignals[0] = Generated[2][0];
+                //OutSignals[0] = K_P*E[0];
                 return OutSignals;
             }
 
@@ -1015,6 +1015,11 @@ public class MainActivity extends AppCompatActivity {
                     );
                     for (int i=0; i<TempOutput.length; i++)
                         Output[i] = PutElementToFIFO(Output[i], PutBetweenRange(TempOutput[i], -5, 5));
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     //for (int i=0; i<NotOfTimesSend; i++)
                         WriteToUSB(Output[0][0]);
                     WaitedTS = false;
@@ -1166,11 +1171,11 @@ public class MainActivity extends AppCompatActivity {
             return array;
         }
         protected void onCancelled() {
-            try {
+            /*try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }
+            }*/
             /*Toast.makeText(getApplicationContext(),
                     "Cancelled...",
                     Toast.LENGTH_SHORT).show();*/
@@ -1185,7 +1190,7 @@ public class MainActivity extends AppCompatActivity {
             while (!mExecutor.isShutdown()) {
 
             }*/
-            DisconnectUSB();
+            //DisconnectUSB();
             /*Toast.makeText(getApplicationContext(),
                     "Finished",
                     Toast.LENGTH_SHORT).show();*/
