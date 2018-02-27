@@ -625,7 +625,7 @@ public class MainActivity extends AppCompatActivity {
                         + a * E[0]
                         + b * E[1]
                         + c * E[2];
-                //OutSignals[0] = K_P*E[0];
+                OutSignals[0] = K_P*E[0];//Generated[2][0];
                 return OutSignals;
             }
 
