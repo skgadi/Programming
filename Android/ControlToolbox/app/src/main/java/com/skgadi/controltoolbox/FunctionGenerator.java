@@ -1,5 +1,7 @@
 package com.skgadi.controltoolbox;
 
+import android.util.Log;
+
 /**
  * Created by gadis on 14-Feb-18.
  */
@@ -126,14 +128,14 @@ public class FunctionGenerator {
     }
     public float GenSine() {
         if (Time>=StartAt)
-            return ((!Compliment) ? -1 : 1) * ((float) (MaximumAmplitude * Math.sin(2 * Math.PI * Frequency * (Time-StartAt)))) + OffSet;
+            return ((Compliment) ? -1f : 1f) * ((float) (MaximumAmplitude * Math.sin(2 * Math.PI * Frequency * (Time-StartAt)))) + OffSet;
         else
             return 0;
     }
     public float GenSawTooth() {
         float TimePeriod = 1/Frequency;
         if (Time>=StartAt)
-            return ((!Compliment) ? -1 : 1) * (((Time - StartAt)%TimePeriod)*2*MaximumAmplitude/TimePeriod - MaximumAmplitude) + OffSet;
+            return ((Compliment) ? -1f : 1f) * (((Time - StartAt)%TimePeriod)*2*MaximumAmplitude/TimePeriod - MaximumAmplitude) + OffSet;
         else
             return 0;
     }
@@ -141,23 +143,23 @@ public class FunctionGenerator {
         float TimePeriod = 1/Frequency;
         if (Time>=StartAt) {
             if (((Time-StartAt)%TimePeriod)<(TimePeriod/2))
-                return ((!Compliment) ? -1 : 1) * (4*MaximumAmplitude/TimePeriod*(((Time - StartAt)%TimePeriod) - TimePeriod/2) + MaximumAmplitude) + OffSet;
+                return ((!Compliment) ? -1f : 1f) * (4*MaximumAmplitude/TimePeriod*(((Time - StartAt)%TimePeriod) - TimePeriod/2) + MaximumAmplitude) + OffSet;
             else
-                return ((!Compliment) ? -1 : 1) * (-4*MaximumAmplitude/TimePeriod*(((Time - StartAt)%TimePeriod) - TimePeriod/2) + MaximumAmplitude) + OffSet;
+                return ((!Compliment) ? -1f : 1f) * (-4*MaximumAmplitude/TimePeriod*(((Time - StartAt)%TimePeriod) - TimePeriod/2) + MaximumAmplitude) + OffSet;
         } else
             return 0;
     }
     public float GetSquare() {
-        GetRectangle(50);
-            return 0;
+        return GetRectangle(50);
     }
     public float GetRectangle(float DutyCycle) {
-        float TimePeriod = 1/Frequency;
+        float TimePeriod = 1f/Frequency;
+        Log.i("FunctionGenerator", "Val: "+(Time-StartAt)%TimePeriod);
         if (Time>=StartAt) {
-            if (((Time-StartAt)%TimePeriod)<(DutyCycle/100))
-                return ((!Compliment) ? -1 : 1) * MaximumAmplitude + OffSet;
+            if (((Time-StartAt)%TimePeriod)<TimePeriod*(DutyCycle/100f))
+                return ((Compliment) ? -1f : 1f) * MaximumAmplitude + OffSet;
             else
-                return ((Compliment) ? -1 : 1) * MaximumAmplitude + OffSet;
+                return ((Compliment) ? 1f : -1f) * MaximumAmplitude + OffSet;
 
         } else
             return 0;

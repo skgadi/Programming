@@ -9,12 +9,14 @@ import android.hardware.usb.UsbDevice;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -67,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
     MenuItem SimulateButton;
 
     LinearLayout ModelView;
-    IndicatorSeekBar[] ModelParamsSeekBars;
+    EditText[] ModelParams;
     GraphView[] ModelGraphs;
     int[] ColorTable = {
             Color.RED,
@@ -157,10 +159,10 @@ public class MainActivity extends AppCompatActivity {
         Screens = new LinearLayout[SCREENS.values().length];
         Screens[0] = (LinearLayout) findViewById(R.id.Main);
         Screens[1] = (LinearLayout) findViewById(R.id.Settings);
-        Screens[2] = (LinearLayout) findViewById(R.id.PID);
-        Screens[3] = (LinearLayout) findViewById(R.id.IDENTIFICATION0);
-        Screens[4] = (LinearLayout) findViewById(R.id.IDENTIFICATION1);
-        Screens[5] = (LinearLayout) findViewById(R.id.IDENTIFICATION2);
+        Screens[2] = (LinearLayout) findViewById(R.id.ModelView);
+        Screens[3] = (LinearLayout) findViewById(R.id.ModelView);
+        Screens[4] = (LinearLayout) findViewById(R.id.ModelView);
+        Screens[5] = (LinearLayout) findViewById(R.id.ModelView);
         DefaultLayoutParams =  new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.FILL_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -379,11 +381,11 @@ public class MainActivity extends AppCompatActivity {
             setTitle(getResources().getString(R.string.app_name)
                     + ": "
                     + getResources().getStringArray(R.array.SCREENS_LIST)[PresentScreen.ordinal()]);
+        ClearTheModelView ();
         switch (Screen) {
             case PID:
                 PreparePIDModel();
                 GenerateViewFromModel();
-                Screens[2].setVisibility(View.GONE);
                 break;
         }
     }
@@ -395,10 +397,14 @@ public class MainActivity extends AppCompatActivity {
         ParentView.addView(TempView);
     }
 
-    private void GenerateViewFromModel () {
-        //Removing previous view
+    private void ClearTheModelView () {
         if (ModelView.getChildCount() >0 )
             ModelView.removeAllViews();
+    }
+
+    private void GenerateViewFromModel () {
+        /*//Removing previous view
+        ClearTheModelView ();*/
         //ModelView.getBackgroundTintList()
         ModelView.setBackgroundColor(Color.WHITE);
         //Declaring TempVariables
@@ -431,7 +437,8 @@ public class MainActivity extends AppCompatActivity {
             TempSwitchForLayout.setChecked(false);
             DrawALine(ModelView);
         }
-        //Parameters IndicatorSeekBars
+        //Parameters
+        DrawALine(ModelView);
         TempLayout = new LinearLayout(getApplicationContext());
         TempLayout.setOrientation(LinearLayout.VERTICAL);
         TempSwitchForLayout = new Switch(getApplicationContext());
@@ -442,26 +449,17 @@ public class MainActivity extends AppCompatActivity {
         TempSwitchForLayout.setTextSize(18);
         TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
         TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
-
-        //--- Sampling time
+        //T_S
         TempTextView = new TextView(getApplicationContext());
         TempTextView.setTextColor(Color.BLACK);
         TempTextView.setText(getString(R.string.SAMPLING_TIME)+" = "
                 +SettingsSeekBars[0].getProgress()
                 +" ms");
-        DrawALine(ModelView);
         TempTextView.setTypeface(null, Typeface.BOLD);
         TempLayout.addView(TempTextView);
-        //--- Others
-        ModelParamsSeekBars = new IndicatorSeekBar[Model.Parameters.length];
+        //Others
+        ModelParams = new EditText[Model.Parameters.length];
         for (int i=0; i<Model.Parameters.length; i++) {
-            ModelParamsSeekBars[i] = new IndicatorSeekBar.Builder(getApplicationContext())
-                    .setMin(Model.Parameters[i].Min)
-                    .setMax(Model.Parameters[i].Max)
-                    .setProgress(Model.Parameters[i].DefaultValue)
-                    .isFloatProgress(true)
-                    .thumbProgressStay(true)
-                    .build();
             TempTextView = new TextView(getApplicationContext());
             TempTextView.setTextColor(Color.BLACK);
             if (Model.Parameters[i].Name.contains(">>")) {
@@ -475,14 +473,15 @@ public class MainActivity extends AppCompatActivity {
             } else
                 TempTextView.setText(Model.Parameters[i].Name);
             TempLayout.addView(TempTextView);
-            TempLayout.addView(ModelParamsSeekBars[i]);
+            ModelParams[i] = new EditText(this);
+            ModelParams[i].setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
+            ModelParams[i].setText(String.valueOf(Model.Parameters[i].DefaultValue));
+            TempLayout.addView(ModelParams[i]);
         }
-
         ModelView.addView(TempSwitchForLayout);
         ModelView.addView(TempLayout);
         TempSwitchForLayout.setChecked(false);
         DrawALine(ModelView);
-
         //Function generator
         DrawALine(ModelView);
         GeneratedSignals = new FunctionGenerator[Model.SignalGenerators.length];
@@ -625,7 +624,7 @@ public class MainActivity extends AppCompatActivity {
                         + a * E[0]
                         + b * E[1]
                         + c * E[2];
-                OutSignals[0] = K_P*E[0];//Generated[2][0];
+                //OutSignals[0] = 0.01f*K_P*E[0];////Generated[2][0];//K_P*E[0];//
                 return OutSignals;
             }
 
@@ -675,8 +674,8 @@ public class MainActivity extends AppCompatActivity {
         TempTrajectories[1]= "Control u(t)";
         Model.Figures[1] = new Figure("Error e(t) and Control u(t)", TempTrajectories);
         Model.Parameters = new Parameter [3];
-        Model.Parameters[0] = new Parameter("Controller parameters>>K_P", 0, 100, 0.1f);
-        Model.Parameters[1] = new Parameter("K_I", 0, 10, 0);
+        Model.Parameters[0] = new Parameter("Controller parameters>>K_P", 0, 100, 0.005f);
+        Model.Parameters[1] = new Parameter("K_I", 0, 10, 30);
         Model.Parameters[2] = new Parameter("K_D", 0, 1, 0);
         Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0f;
     }
@@ -727,7 +726,6 @@ public class MainActivity extends AppCompatActivity {
                                 //port,
                                 Model,
                                 GeneratedSignals,
-                                ModelParamsSeekBars,
                                 ModelGraphs,
                                 PresentScreen);
                         SimHandle = new Simulate();
@@ -859,24 +857,14 @@ public class MainActivity extends AppCompatActivity {
         Purged = true;
     }
     private void DataRecUpdate (byte[] data) {
-        //Log.i("Timing", "Previous String: " + PrevString);
         String Rec = PrevString + new String(data);
-        Log.i("Timing", "Received String: " + Rec);
-        Log.i("Timing", "Last Digit"+Rec.substring(Rec.length()-1));/**/
+        Log.i("Timing", "Found New data:" + new String(data));
         if (Rec.contains("E") && Rec.contains("[") && Rec.contains("]")) {
             PrevString = "";
-            /*Rec = Rec.substring(0, Rec.indexOf("E"));
-            //Log.i("USBRec", "Received String with validation: " + Rec);
-            String[] RecStrs = Rec.split(";");
-            for (int i=0; i<RecStrs.length; i++) {
-                try {
-                    RecData[i] = Float.parseFloat(RecStrs[i]) / 1024 * 5;
-                } catch (Exception e) {
-                    Log.i("Timing", "Error in parse");
-                }
-            }*/
             try {
-                String result = Rec.substring(Rec.indexOf("[") + 1, Rec.indexOf("]"));
+                String result = Rec.substring(Rec.indexOf("[") + 1, Rec.indexOf("]", Rec.indexOf("[")));
+                Log.i("Timing", "Obtained: "+Rec);
+                Log.i("Timing", "Extracted: "+result);
                 RecData[0] = Float.parseFloat(result) / 1024 * 5;
                 isValidRead = true;
             } catch (Exception e) {
@@ -910,6 +898,36 @@ public class MainActivity extends AppCompatActivity {
             Log.i("Timing", "Received data size: " + data.length);
         }
     }
+
+    private void RequestAI() {
+        byte[] OutBytes= {(byte)0x32,0,0,};
+        arduino.send(OutBytes);
+    }
+    private void WriteToUSB(Float Value) {
+        arduino.send(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)));
+        Log.i("Timing", "Writing Command");
+        //SendToUSB(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)));
+        //port.write(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)),10);//Math.round(Model.T_S*1000f));
+        //mSerialIoManager.writeAsync("AA".getBytes());
+    }
+
+    private int ConvertFloatToIntForAO (Float OutFloat) {
+        return Math.round(OutFloat*51f);
+    }
+
+    private byte[] ConvertToIntTSendBytes (int Out) {
+        byte[] OutBytes= {(byte)0x31, 0,0};
+        if (Math.abs(Out)>=255)
+            OutBytes[1] = (byte) 0xff;
+        else
+            OutBytes[1] = (byte) (Math.abs(Out) & 0x0ff);
+        if (Out>0)
+            OutBytes[2] = 0x00;
+        else
+            OutBytes[2] = 0x01;
+        //Log.i("Timing", String.format("ing string: 0x%2X, 0x%2X, 0x%2X", OutBytes[0], OutBytes[1], OutBytes[2]));
+        return OutBytes;
+    }
     /*
     Async task for implementing algorithms in real time
     */
@@ -917,21 +935,19 @@ public class MainActivity extends AppCompatActivity {
         //UsbSerialPort Port;
         SimulationView SimulationModel;
         FunctionGenerator[] GeneratedSignals;
-        IndicatorSeekBar[] ModelParamsSeekBars;
+        EditText[] ModelParams;
         GraphView[] ModelGraphs;
         SCREENS Screen;
         SimulateParams (
                 //UsbSerialPort port,
                 SimulationView simulationModel,
                 FunctionGenerator[] generatedSignals,
-                IndicatorSeekBar[] modelParamsSeekBars,
                 GraphView[] modelGraphs,
                 SCREENS screen
                 ) {
             //Port = port;
             SimulationModel = simulationModel;
             GeneratedSignals = generatedSignals;
-            ModelParamsSeekBars = modelParamsSeekBars;
             ModelGraphs = modelGraphs;
             Screen = screen;
         }
@@ -999,29 +1015,23 @@ public class MainActivity extends AppCompatActivity {
 
             isValidRead = true;
             long LastWrittenTime=0;
-
+            Log.i("Timing", "Simulation Background");
             while(!this.isCancelled() || !DeviceConnected) {
                 if (!Purged)
                     PurgeReceivedBuffer();
                 Time = (System.currentTimeMillis()-StartTime)/1000.0f;
-                if (((((int)(System.currentTimeMillis() - StartTime))
-                        %Math.round(Model.T_S*1000)) == 0) && (System.currentTimeMillis() != LastWrittenTime)) {
+                if ((
+                        (((int)(System.currentTimeMillis() - StartTime))%Math.round(Model.T_S*1000)) == 0)
+                        &&
+                        (System.currentTimeMillis() != LastWrittenTime)
+                        ) {
                     LastWrittenTime = System.currentTimeMillis();
-                    float[] TempOutput = Model.RunAlgorithms(
-                            GetParameters(),
-                            PreparedSignals,
-                            Input,
-                            Output
-                    );
-                    for (int i=0; i<TempOutput.length; i++)
-                        Output[i] = PutElementToFIFO(Output[i], PutBetweenRange(TempOutput[i], -5, 5));
+                    RequestAI();
                     try {
                         Thread.sleep(1);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    //for (int i=0; i<NotOfTimesSend; i++)
-                        WriteToUSB(Output[0][0]);
                     WaitedTS = false;
                     Log.i("Timing", "T_S: "+Math.round(Model.T_S*1000));
                 }
@@ -1045,6 +1055,16 @@ public class MainActivity extends AppCompatActivity {
                     for (int i = 0; i< PreparedSignals.length; i++)
                         PreparedSignals[i] = PutElementToFIFO(PreparedSignals[i],
                                 GeneratedSignals[i].GetValue(Time));
+                    float[] TempOutput = Model.RunAlgorithms(
+                            GetParameters(),
+                            PreparedSignals,
+                            Input,
+                            Output
+                    );
+                    for (int i=0; i<TempOutput.length; i++)
+                        Output[i] = PutElementToFIFO(Output[i], PutBetweenRange(TempOutput[i], -5, 5));
+                    //for (int i=0; i<NotOfTimesSend; i++)
+                    WriteToUSB(Output[0][0]);
                     publishProgress(PParams);
                 }
 
@@ -1159,7 +1179,11 @@ public class MainActivity extends AppCompatActivity {
         protected float[] GetParameters () {
             float[] ParameterValues = new float[Model.Parameters.length];
             for (int i=0; i<ParameterValues.length; i++) {
-                ParameterValues[i] = ModelParamsSeekBars[i].getProgressFloat();
+                try {
+                    ParameterValues[i] = Float.parseFloat(ModelParams[i].getText().toString());
+                } catch (Exception e){
+                    ParameterValues[i] = 0;
+                }
             }
             return ParameterValues;
         }
@@ -1195,29 +1219,6 @@ public class MainActivity extends AppCompatActivity {
                     "Finished",
                     Toast.LENGTH_SHORT).show();*/
             ChangeStateToNotSimulating();
-        }
-        private void WriteToUSB(Float Value) {
-            arduino.send(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)));
-            Log.i("Timing", "Writing Command");
-            //SendToUSB(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)));
-            //port.write(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)),10);//Math.round(Model.T_S*1000f));
-            //mSerialIoManager.writeAsync("AA".getBytes());
-        }
-        private int ConvertFloatToIntForAO (Float OutFloat) {
-            return Math.round(OutFloat*51f);
-        }
-        private byte[] ConvertToIntTSendBytes (int Out) {
-            byte[] OutBytes= {0,0,(byte)0x31};
-            if (Math.abs(Out)>=255)
-                OutBytes[0] = (byte) 0xff;
-            else
-                OutBytes[0] = (byte) (Math.abs(Out) & 0x0ff);
-            if (Out>0)
-                OutBytes[1] = 0x00;
-            else
-                OutBytes[1] = 0x01;
-            //Log.i("Timing", String.format("ing string: 0x%2X, 0x%2X, 0x%2X", OutBytes[0], OutBytes[1], OutBytes[2]));
-            return OutBytes;
         }
     }
 
