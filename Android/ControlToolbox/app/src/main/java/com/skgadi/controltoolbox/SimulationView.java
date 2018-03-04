@@ -15,23 +15,23 @@ public abstract class SimulationView {
     public String[] SignalGenerators;
     public Figure Figures [];
     public Parameter[] Parameters;
-    public float T_S;
-    public float[] OutPut;
+    public double T_S;
+    public double[] OutPut;
     public int NoOfInputs;
     public int NoOfOutputs;
     public int NoOfPastInputsRequired;
     public int NoOfPastOuputsRequired;
     public int NoOfPastGeneratedValuesRequired;
-    public abstract float[] RunAlgorithms(
-            float[] Parameters,
-            float[][] Generated,
-            float[][] Input,
-            float[][] Output
+    public abstract double[] RunAlgorithms(
+            double[] Parameters,
+            double[][] Generated,
+            double[][] Input,
+            double[][] Output
     );
-    public abstract float[] OutGraphSignals (
-            float[] Parameters,
-            float[][] Generated,
-            float[][] Input,
-            float[][] Output
+    public abstract double[] OutGraphSignals (
+            double[] Parameters,
+            double[][] Generated,
+            double[][] Input,
+            double[][] Output
     );
 }

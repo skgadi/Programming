@@ -15,14 +15,14 @@ enum SignalType {
 }
 public class FunctionGenerator {
     public SignalType Type;
-    public float Frequency;
-    public float MaximumAmplitude;
-    public float StartAt;
-    public float DutyCycle;
-    public float OffSet;
-    public float Time;
+    public double Frequency;
+    public double MaximumAmplitude;
+    public double StartAt;
+    public double DutyCycle;
+    public double OffSet;
+    public double Time;
     public boolean Compliment;
-    public float[][] MinMaxDefaultsForFloats = {
+    public double[][] MinMaxDefaultsForFloats = {
             {0, 5, 2.5f}, {0, 5, 0}, {0, 10, 0}, {0, 100, 50}, {-5, 5, 0}
     };
     public FunctionGenerator() {
@@ -102,7 +102,7 @@ public class FunctionGenerator {
         }
         return "";
     }
-    public float GetValue (float time) {
+    public double GetValue (double time) {
         Time = time;
         switch (Type) {
             case STEP:
@@ -120,27 +120,27 @@ public class FunctionGenerator {
         }
         return 0.0f;
     }
-    public float GenStep() {
+    public double GenStep() {
         if (Time>=StartAt)
             return ((!Compliment) ? 1f : -1f) * MaximumAmplitude + OffSet;
         else
             return 0;
     }
-    public float GenSine() {
+    public double GenSine() {
         if (Time>=StartAt)
-            return ((Compliment) ? -1f : 1f) * ((float) (MaximumAmplitude * Math.sin(2 * Math.PI * Frequency * (Time-StartAt)))) + OffSet;
+            return ((Compliment) ? -1f : 1f) * (MaximumAmplitude * Math.sin(2 * Math.PI * Frequency * (Time-StartAt))) + OffSet;
         else
             return 0;
     }
-    public float GenSawTooth() {
-        float TimePeriod = 1/Frequency;
+    public double GenSawTooth() {
+        double TimePeriod = 1/Frequency;
         if (Time>=StartAt)
             return ((Compliment) ? -1f : 1f) * (((Time - StartAt)%TimePeriod)*2*MaximumAmplitude/TimePeriod - MaximumAmplitude) + OffSet;
         else
             return 0;
     }
-    public float GenTriangle() {
-        float TimePeriod = 1/Frequency;
+    public double GenTriangle() {
+        double TimePeriod = 1/Frequency;
         if (Time>=StartAt) {
             if (((Time-StartAt)%TimePeriod)<(TimePeriod/2))
                 return ((!Compliment) ? -1f : 1f) * (4*MaximumAmplitude/TimePeriod*(((Time - StartAt)%TimePeriod) - TimePeriod/2) + MaximumAmplitude) + OffSet;
@@ -149,11 +149,11 @@ public class FunctionGenerator {
         } else
             return 0;
     }
-    public float GetSquare() {
+    public double GetSquare() {
         return GetRectangle(50);
     }
-    public float GetRectangle(float DutyCycle) {
-        float TimePeriod = 1f/Frequency;
+    public double GetRectangle(double DutyCycle) {
+        double TimePeriod = 1f/Frequency;
         Log.i("FunctionGenerator", "Val: "+(Time-StartAt)%TimePeriod);
         if (Time>=StartAt) {
             if (((Time-StartAt)%TimePeriod)<TimePeriod*(DutyCycle/100f))

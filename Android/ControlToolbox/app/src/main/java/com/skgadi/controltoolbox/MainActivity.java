@@ -24,14 +24,12 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.github.mikephil.charting.charts.LineChart;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.LegendRenderer;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 import com.warkiz.widget.IndicatorSeekBar;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -473,9 +471,10 @@ public class MainActivity extends AppCompatActivity {
             } else
                 TempTextView.setText(Model.Parameters[i].Name);
             TempLayout.addView(TempTextView);
-            ModelParams[i] = new EditText(this);
+            ModelParams[i] = new EditText(getApplicationContext());
             ModelParams[i].setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
             ModelParams[i].setText(String.valueOf(Model.Parameters[i].DefaultValue));
+            ModelParams[i].setTextColor(Color.BLACK);
             TempLayout.addView(ModelParams[i]);
         }
         ModelView.addView(TempSwitchForLayout);
@@ -517,7 +516,14 @@ public class MainActivity extends AppCompatActivity {
                 TempTextView = new TextView(getApplicationContext());
                 TempTextView.setTextColor(Color.BLACK);
                 TempTextView.setText(getResources().getStringArray(R.array.SIGNAL_GENERATOR_PARAMETERS)[j]);
-                IndicatorSeekBar TempSeekBar = new IndicatorSeekBar.Builder(getApplicationContext())
+                EditText TempEditText = new EditText(getApplicationContext());
+                TempEditText.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
+                TempEditText.setText(String.valueOf(GeneratedSignals[i].MinMaxDefaultsForFloats[j][2]));
+                TempEditText.setTextColor(Color.BLACK);
+                TempEditText.addTextChangedListener(new ListenerForFunctionGenerator(
+                        GeneratedSignals[i], j, TempSwitchForLayout
+                ));
+                /*IndicatorSeekBar TempSeekBar = new IndicatorSeekBar.Builder(getApplicationContext())
                         .setMin(GeneratedSignals[i].MinMaxDefaultsForFloats[j][0])
                         .setMax(GeneratedSignals[i].MinMaxDefaultsForFloats[j][1])
                         .setProgress(GeneratedSignals[i].MinMaxDefaultsForFloats[j][2])
@@ -525,9 +531,10 @@ public class MainActivity extends AppCompatActivity {
                         .thumbProgressStay(true)
                         .build();
                 TempSeekBar.setOnSeekChangeListener(
-                        new SeekBarListenerForFunctionGenerator(GeneratedSignals[i], j, TempSwitchForLayout));
+                        new ListenerForFunctionGenerator(GeneratedSignals[i], j, TempSwitchForLayout));*/
                 TempLayout.addView(TempTextView);
-                TempLayout.addView(TempSeekBar);
+                TempLayout.addView(TempEditText);
+                //TempLayout.addView(TempSeekBar);
             }
             //Compliment
             Switch TempSwitchForCompliment = new Switch(getApplicationContext());
@@ -603,23 +610,23 @@ public class MainActivity extends AppCompatActivity {
     private void PreparePIDModel() {
         Model = new SimulationView() {
             @Override
-            public float[] RunAlgorithms(
-                    float[] Parameters,
-                    float[][] Generated,
-                    float[][] Input,
-                    float[][] Output
+            public double[] RunAlgorithms(
+                    double[] Parameters,
+                    double[][] Generated,
+                    double[][] Input,
+                    double[][] Output
             ){
-                float K_P = Parameters[0];
-                float K_I = Parameters[1];
-                float K_D = Parameters[2];
-                float a = K_P + K_I* T_S /2.0f + K_D/T_S;
-                float b = -K_P + K_I*T_S/2.0f - 2.0f*K_D/T_S;
-                float c = K_D/T_S;
-                float[] E = new float[3];
+                double K_P = Parameters[0];
+                double K_I = Parameters[1];
+                double K_D = Parameters[2];
+                double a = K_P + K_I* T_S /2.0f + K_D/T_S;
+                double b = -K_P + K_I*T_S/2.0f - 2.0f*K_D/T_S;
+                double c = K_D/T_S;
+                double[] E = new double[3];
                 for (int i=0; i<3; i++) {
                     E[i] = ((Generated[0][i] + Generated[1][i] + Generated[2][i]) - Input[0][i]);
                 }
-                float [] OutSignals = new float[1];
+                double [] OutSignals = new double[1];
                 OutSignals[0] = Output[0][1]
                         + a * E[0]
                         + b * E[1]
@@ -629,14 +636,14 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public float[] OutGraphSignals(
-                    float[] Parameters,
-                    float[][] Generated,
-                    float[][] Input,
-                    float[][] Output
+            public double[] OutGraphSignals(
+                    double[] Parameters,
+                    double[][] Generated,
+                    double[][] Input,
+                    double[][] Output
             )
             {
-                float[] Trajectories = new float[4];
+                double[] Trajectories = new double[4];
                 Trajectories[0] = Generated[0][0] + Generated[1][0] + Generated[2][0];
                 Trajectories[1] = Input[0][0];
                 Trajectories[2] = Trajectories[0]-Input[0][0];
@@ -649,7 +656,7 @@ public class MainActivity extends AppCompatActivity {
         Model.NoOfPastInputsRequired = 2;
         Model.NoOfPastOuputsRequired = 1;
         Model.NoOfPastGeneratedValuesRequired = 2;
-        Model.OutPut = new float[1];
+        Model.OutPut = new double[1];
         Model.OutPut[0]=0;
         Model.Images = new int[1    ];
         Model.Images[0] = R.drawable.pid;
@@ -822,7 +829,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //mserialio
-    float[] RecData = new float[3];
+    double[] RecData = new double[3];
     boolean Purged = false;
     boolean isValidRead=false;
     String PrevString="";
@@ -865,7 +872,7 @@ public class MainActivity extends AppCompatActivity {
                 String result = Rec.substring(Rec.indexOf("[") + 1, Rec.indexOf("]", Rec.indexOf("[")));
                 Log.i("Timing", "Obtained: "+Rec);
                 Log.i("Timing", "Extracted: "+result);
-                RecData[0] = Float.parseFloat(result) / 1024 * 5;
+                RecData[0] = Double.parseDouble(result) / 1024 * 5;
                 isValidRead = true;
             } catch (Exception e) {
                 Log.i("Timing", "Error in parse");
@@ -903,7 +910,7 @@ public class MainActivity extends AppCompatActivity {
         byte[] OutBytes= {(byte)0x32,0,0,};
         arduino.send(OutBytes);
     }
-    private void WriteToUSB(Float Value) {
+    private void WriteToUSB(double Value) {
         arduino.send(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)));
         Log.i("Timing", "Writing Command");
         //SendToUSB(ConvertToIntTSendBytes(ConvertFloatToIntForAO(Value)));
@@ -911,11 +918,11 @@ public class MainActivity extends AppCompatActivity {
         //mSerialIoManager.writeAsync("AA".getBytes());
     }
 
-    private int ConvertFloatToIntForAO (Float OutFloat) {
+    private long ConvertFloatToIntForAO (double OutFloat) {
         return Math.round(OutFloat*51f);
     }
 
-    private byte[] ConvertToIntTSendBytes (int Out) {
+    private byte[] ConvertToIntTSendBytes (long Out) {
         byte[] OutBytes= {(byte)0x31, 0,0};
         if (Math.abs(Out)>=255)
             OutBytes[1] = (byte) 0xff;
@@ -935,7 +942,6 @@ public class MainActivity extends AppCompatActivity {
         //UsbSerialPort Port;
         SimulationView SimulationModel;
         FunctionGenerator[] GeneratedSignals;
-        EditText[] ModelParams;
         GraphView[] ModelGraphs;
         SCREENS Screen;
         SimulateParams (
@@ -952,7 +958,7 @@ public class MainActivity extends AppCompatActivity {
             Screen = screen;
         }
     }
-    public float PutBetweenRange (float value, float MinValue, float MaxValue) {
+    public double PutBetweenRange (double value, double MinValue, double MaxValue) {
         if (value>MaxValue)
             return MaxValue;
         if (value<MinValue)
@@ -961,18 +967,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private static class ProgressParams {
-        float[] Values;
-        ProgressParams (float[] values) {
+        double[] Values;
+        ProgressParams (double[] values) {
             Values = values;
         }
     }
     private class Simulate extends AsyncTask <SimulateParams, ProgressParams, Integer> {
         //UsbSerialPort port;
-        float[][] Input;
-        float[][] Output;
-        float[][] PreparedSignals;
-        float Time;
-        float[] ReadTimes = {0,0,0,0};
+        double[][] Input;
+        double[][] Output;
+        double[][] PreparedSignals;
+        double Time;
+        double[] ReadTimes = {0,0,0,0};
 
 
 
@@ -989,7 +995,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected Integer doInBackground(SimulateParams... Params) {
-            float[] PValues = new float[6];
+            double[] PValues = new double[6];
             //series = new LineGraphSeries<DataPoint>();
             DataPoints = new DataPoint[1000];
 
@@ -1001,14 +1007,14 @@ public class MainActivity extends AppCompatActivity {
             //PurgeReceivedBuffer();
 
             long StartTime = System.currentTimeMillis();
-            float TestOutVal0=-5;
+            double TestOutVal0=-5;
             int TestOutVal1=0;
             int NoOfIterations=0;
             int NotOfTimesSend = 1;
-            float TSPresent = 0;
-            float TS1Delay = 0;
-            float TS2Delay = 0;
-            float TS3Delay = 0;
+            double TSPresent = 0;
+            double TS1Delay = 0;
+            double TS2Delay = 0;
+            double TS3Delay = 0;
             final byte[] PKT_STOP_SNIF = { (byte) 0xFB, '\n' };
 
             Log.i("Timing", "Started work");
@@ -1038,7 +1044,7 @@ public class MainActivity extends AppCompatActivity {
                 if (isValidRead) {
                     isValidRead  = false;
                     PutElementToFIFO(ReadTimes, Time);
-                    float MovingAverageTS=0;
+                    double MovingAverageTS=0;
                     for (int i=0; i<(ReadTimes.length-1); i++)
                         MovingAverageTS = MovingAverageTS + (ReadTimes[i]-ReadTimes[i+1]);
                     MovingAverageTS = MovingAverageTS/(ReadTimes.length-1);
@@ -1055,7 +1061,7 @@ public class MainActivity extends AppCompatActivity {
                     for (int i = 0; i< PreparedSignals.length; i++)
                         PreparedSignals[i] = PutElementToFIFO(PreparedSignals[i],
                                 GeneratedSignals[i].GetValue(Time));
-                    float[] TempOutput = Model.RunAlgorithms(
+                    double[] TempOutput = Model.RunAlgorithms(
                             GetParameters(),
                             PreparedSignals,
                             Input,
@@ -1129,7 +1135,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(ProgressParams... Params) {
-            float[] SignalsToPlot = Model.OutGraphSignals(
+            double[] SignalsToPlot = Model.OutGraphSignals(
                     GetParameters(),
                     PreparedSignals,
                     Input,
@@ -1153,9 +1159,9 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute () {
             Purged = false;
             Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0f;
-            Input = new float[Model.NoOfInputs][Model.NoOfPastInputsRequired+1];
-            Output = new float[Model.NoOfOutputs][Model.NoOfPastOuputsRequired+1];
-            PreparedSignals = new float[Model.SignalGenerators.length][Model.NoOfPastGeneratedValuesRequired+1];
+            Input = new double[Model.NoOfInputs][Model.NoOfPastInputsRequired+1];
+            Output = new double[Model.NoOfOutputs][Model.NoOfPastOuputsRequired+1];
+            PreparedSignals = new double[Model.SignalGenerators.length][Model.NoOfPastGeneratedValuesRequired+1];
             for (int i=0; i<Input.length; i++) {
                 for (int j=0; j<Input[i].length; j++)
                     Input[i][j] = 0;
@@ -1176,18 +1182,18 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-        protected float[] GetParameters () {
-            float[] ParameterValues = new float[Model.Parameters.length];
+        protected double[] GetParameters () {
+            double[] ParameterValues = new double[Model.Parameters.length];
             for (int i=0; i<ParameterValues.length; i++) {
                 try {
-                    ParameterValues[i] = Float.parseFloat(ModelParams[i].getText().toString());
+                    ParameterValues[i] = Double.parseDouble(ModelParams[i].getText().toString());
                 } catch (Exception e){
                     ParameterValues[i] = 0;
                 }
             }
             return ParameterValues;
         }
-        protected float[] PutElementToFIFO (float[] array, float element){
+        protected double[] PutElementToFIFO (double[] array, double element){
             for (int i=(array.length-1); i>0; i--) {
                 array[i] = array[i-1];
             }

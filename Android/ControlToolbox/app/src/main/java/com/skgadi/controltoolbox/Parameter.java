@@ -7,10 +7,10 @@ package com.skgadi.controltoolbox;
 
 public class Parameter {
     public String Name;
-    public float Min;
-    public float Max;
-    public float DefaultValue;
-    Parameter (String name, float min, float max, float defaultValue) {
+    public double Min;
+    public double Max;
+    public double DefaultValue;
+    Parameter (String name, double min, double max, double defaultValue) {
         Name = name;
         Min = min;
         Max = max;
