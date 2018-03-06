@@ -33,7 +33,7 @@
         <item>Main window</item>
         <item>Settings</item>
         <item>PID Controller</item>
-        <item>Zero order identification</item>
+        <item>Adaptive Controller</item>
         <item>First order identification</item>
         <item>Second order identification</item>
     </string-array>

@@ -381,9 +381,21 @@ public class MainActivity extends AppCompatActivity {
                     + getResources().getStringArray(R.array.SCREENS_LIST)[PresentScreen.ordinal()]);
         ClearTheModelView ();
         switch (Screen) {
+            case MAIN_SCREEN:
+                break;
+            case SETTINGS:
+                break;
             case PID:
                 PreparePIDModel();
                 GenerateViewFromModel();
+                break;
+            case IDENTIFICATION0:
+                PrepareAdaptiveControlModel();
+                GenerateViewFromModel();
+                break;
+            case IDENTIFICATION1:
+                break;
+            case IDENTIFICATION2:
                 break;
         }
     }
@@ -619,8 +631,8 @@ public class MainActivity extends AppCompatActivity {
                 double K_P = Parameters[0];
                 double K_I = Parameters[1];
                 double K_D = Parameters[2];
-                double a = K_P + K_I* T_S /2.0f + K_D/T_S;
-                double b = -K_P + K_I*T_S/2.0f - 2.0f*K_D/T_S;
+                double a = K_P + K_I* T_S /2.0 + K_D/T_S;
+                double b = -K_P + K_I*T_S/2.0 - 2.0*K_D/T_S;
                 double c = K_D/T_S;
                 double[] E = new double[3];
                 for (int i=0; i<3; i++) {
@@ -658,7 +670,7 @@ public class MainActivity extends AppCompatActivity {
         Model.NoOfPastGeneratedValuesRequired = 2;
         Model.OutPut = new double[1];
         Model.OutPut[0]=0;
-        Model.Images = new int[1    ];
+        Model.Images = new int[1];
         Model.Images[0] = R.drawable.pid;
         //Model.Images[1] = R.drawable.pid;
         Model.ImageNames = new String[1];
@@ -681,11 +693,90 @@ public class MainActivity extends AppCompatActivity {
         TempTrajectories[1]= "Control u(t)";
         Model.Figures[1] = new Figure("Error e(t) and Control u(t)", TempTrajectories);
         Model.Parameters = new Parameter [3];
-        Model.Parameters[0] = new Parameter("Controller parameters>>K_P", 0, 100, 0.005f);
+        Model.Parameters[0] = new Parameter("Controller parameters>>K_P", 0, 100, 0.005);
         Model.Parameters[1] = new Parameter("K_I", 0, 10, 30);
         Model.Parameters[2] = new Parameter("K_D", 0, 1, 0);
-        Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0f;
+        Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0;
     }
+
+    private void PrepareAdaptiveControlModel() {
+        Model = new SimulationView() {
+            @Override
+            public double[] RunAlgorithms(
+                    double[] Parameters,
+                    double[][] Generated,
+                    double[][] Input,
+                    double[][] Output
+            ){
+                double K_P = Parameters[0];
+                double K_I = Parameters[1];
+                double K_D = Parameters[2];
+                double a = K_P + K_I* T_S /2.0 + K_D/T_S;
+                double b = -K_P + K_I*T_S/2.0 - 2.0*K_D/T_S;
+                double c = K_D/T_S;
+                double[] E = new double[3];
+                for (int i=0; i<3; i++) {
+                    E[i] = ((Generated[0][i] + Generated[1][i] + Generated[2][i]) - Input[0][i]);
+                }
+                double [] OutSignals = new double[1];
+                OutSignals[0] = Output[0][1]
+                        + a * E[0]
+                        + b * E[1]
+                        + c * E[2];
+                //OutSignals[0] = 0.01f*K_P*E[0];////Generated[2][0];//K_P*E[0];//
+                return OutSignals;
+            }
+
+            @Override
+            public double[] OutGraphSignals(
+                    double[] Parameters,
+                    double[][] Generated,
+                    double[][] Input,
+                    double[][] Output
+            )
+            {
+                double[] Trajectories = new double[4];
+                Trajectories[0] = Generated[0][0] + Generated[1][0] + Generated[2][0];
+                Trajectories[1] = Input[0][0];
+                Trajectories[2] = Trajectories[0]-Input[0][0];
+                Trajectories[3] = Output[0][0];
+                return Trajectories;
+            }
+        };
+        Model.NoOfInputs=1;
+        Model.NoOfOutputs=1;
+        Model.NoOfPastInputsRequired = 2;
+        Model.NoOfPastOuputsRequired = 1;
+        Model.NoOfPastGeneratedValuesRequired = 2;
+        Model.OutPut = new double[1];
+        Model.OutPut[0]=0;
+        Model.Images = new int[1];
+        Model.Images[0] = R.drawable.pid;
+        //Model.Images[1] = R.drawable.pid;
+        Model.ImageNames = new String[1];
+        Model.ImageNames[0] = "Adaptive control model";
+        //Model.ImageNames[1] = "Reference Value details";
+        Model.Ports = new String[2];
+        Model.Ports[0] = "Control signal u(t)";
+        Model.Ports[1] = "Plant's output y(t)";
+        Model.SignalGenerators = new String[3];
+        Model.SignalGenerators[0] = "R1(t)";
+        Model.SignalGenerators[1] = "R2(t)";
+        Model.SignalGenerators[2] = "R3(t)";
+        Model.Figures = new Figure[2];
+        String[] TempTrajectories = new String[2];
+        TempTrajectories[0]= "Reference r(t)";
+        TempTrajectories[1]= "Output y(t)";
+        Model.Figures[0] = new Figure("Reference r(t) and Output y(t)", TempTrajectories);
+        TempTrajectories = new String[2];
+        TempTrajectories[0]= "Error e(t)";
+        TempTrajectories[1]= "Control u(t)";
+        Model.Figures[1] = new Figure("Error e(t) and Control u(t)", TempTrajectories);
+        Model.Parameters = new Parameter [1];
+        Model.Parameters[0] = new Parameter("Adaptive Control Parameters>>\u03B3", 0, 1000, 0.005);
+        Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0;
+    }
+
     public class OnMainWindowButton implements View.OnClickListener {
         int ScreenNumber;
         public OnMainWindowButton (int ScreenNumber) {
@@ -885,7 +976,7 @@ public class MainActivity extends AppCompatActivity {
     private void DataRecUpdateForHex (byte[] data) {
         if (data.length>=2) {
             short TempVal = (short) ((data[0] & 0xff) | (data[1] << 8));
-            RecData[0] = PutBetweenRange(TempVal/1024f*5f, -5, 5);
+            RecData[0] = PutBetweenRange(TempVal/1024.0*5.0, -5, 5);
             Log.i("Timing", "New Data: " + TempVal);
             isValidRead = true;
         } /*else if (data.length==1) {
@@ -919,7 +1010,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private long ConvertFloatToIntForAO (double OutFloat) {
-        return Math.round(OutFloat*51f);
+        return Math.round(OutFloat*51.0);
     }
 
     private byte[] ConvertToIntTSendBytes (long Out) {
@@ -1025,7 +1116,7 @@ public class MainActivity extends AppCompatActivity {
             while(!this.isCancelled() || !DeviceConnected) {
                 if (!Purged)
                     PurgeReceivedBuffer();
-                Time = (System.currentTimeMillis()-StartTime)/1000.0f;
+                Time = (System.currentTimeMillis()-StartTime)/1000.0;
                 if ((
                         (((int)(System.currentTimeMillis() - StartTime))%Math.round(Model.T_S*1000)) == 0)
                         &&
@@ -1158,7 +1249,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute () {
             Purged = false;
-            Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0f;
+            Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0;
             Input = new double[Model.NoOfInputs][Model.NoOfPastInputsRequired+1];
             Output = new double[Model.NoOfOutputs][Model.NoOfPastOuputsRequired+1];
             PreparedSignals = new double[Model.SignalGenerators.length][Model.NoOfPastGeneratedValuesRequired+1];
