@@ -708,22 +708,28 @@ public class MainActivity extends AppCompatActivity {
                     double[][] Input,
                     double[][] Output
             ){
-                double K_P = Parameters[0];
-                double K_I = Parameters[1];
-                double K_D = Parameters[2];
-                double a = K_P + K_I* T_S /2.0 + K_D/T_S;
-                double b = -K_P + K_I*T_S/2.0 - 2.0*K_D/T_S;
-                double c = K_D/T_S;
+                /*
+                    Output[0] --> u
+                    Output[1] --> a_r
+                    Output[2] --> a_y
+                    Generated[0] --> R_1
+                    Generated[1] --> R_2
+                    Generated[2] --> R_3
+                    R = R_1 + R_2 + R_3
+                    Input[0] --> y
+                    E --> e
+                */
+                double Gamma = Parameters[0];
                 double[] E = new double[3];
-                for (int i=0; i<3; i++) {
-                    E[i] = ((Generated[0][i] + Generated[1][i] + Generated[2][i]) - Input[0][i]);
-                }
-                double [] OutSignals = new double[1];
-                OutSignals[0] = Output[0][1]
-                        + a * E[0]
-                        + b * E[1]
-                        + c * E[2];
-                //OutSignals[0] = 0.01f*K_P*E[0];////Generated[2][0];//K_P*E[0];//
+                double[] R = new double[3];
+                for (int i=0; i<3; i++)
+                    R[i] = Generated[0][i] + Generated[1][i] + Generated[2][i];
+                for (int i=0; i<3; i++)
+                    E[i] = (R[i] - Input[0][i]);
+                double [] OutSignals = new double[3];
+                OutSignals[1] = Output[1][0] + Gamma*Model.T_S*(E[0]*R[0] + E[1]*R[1])/2.0;
+                OutSignals[2] = Output[2][0] + Gamma*Model.T_S*(E[0]*Input[0][0] + E[1]*Input[0][1])/2.0;
+                OutSignals[0] = OutSignals[1]*R[0] + OutSignals[2]*Input[0][0];
                 return OutSignals;
             }
 
@@ -735,16 +741,18 @@ public class MainActivity extends AppCompatActivity {
                     double[][] Output
             )
             {
-                double[] Trajectories = new double[4];
+                double[] Trajectories = new double[6];
                 Trajectories[0] = Generated[0][0] + Generated[1][0] + Generated[2][0];
                 Trajectories[1] = Input[0][0];
                 Trajectories[2] = Trajectories[0]-Input[0][0];
                 Trajectories[3] = Output[0][0];
+                Trajectories[4] = Output[1][0];
+                Trajectories[5] = Output[2][0];
                 return Trajectories;
             }
         };
         Model.NoOfInputs=1;
-        Model.NoOfOutputs=1;
+        Model.NoOfOutputs=3;
         Model.NoOfPastInputsRequired = 2;
         Model.NoOfPastOuputsRequired = 1;
         Model.NoOfPastGeneratedValuesRequired = 2;
@@ -763,7 +771,9 @@ public class MainActivity extends AppCompatActivity {
         Model.SignalGenerators[0] = "R1(t)";
         Model.SignalGenerators[1] = "R2(t)";
         Model.SignalGenerators[2] = "R3(t)";
-        Model.Figures = new Figure[2];
+
+        //Figures
+        Model.Figures = new Figure[3];
         String[] TempTrajectories = new String[2];
         TempTrajectories[0]= "Reference r(t)";
         TempTrajectories[1]= "Output y(t)";
@@ -772,6 +782,11 @@ public class MainActivity extends AppCompatActivity {
         TempTrajectories[0]= "Error e(t)";
         TempTrajectories[1]= "Control u(t)";
         Model.Figures[1] = new Figure("Error e(t) and Control u(t)", TempTrajectories);
+        TempTrajectories = new String[2];
+        TempTrajectories[0]= "a_r";
+        TempTrajectories[1]= "a_y";
+        Model.Figures[2] = new Figure("Parameters of the system", TempTrajectories);
+
         Model.Parameters = new Parameter [1];
         Model.Parameters[0] = new Parameter("Adaptive Control Parameters>>\u03B3", 0, 1000, 0.005);
         Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0;
@@ -1159,9 +1174,9 @@ public class MainActivity extends AppCompatActivity {
                             Output
                     );
                     for (int i=0; i<TempOutput.length; i++)
-                        Output[i] = PutElementToFIFO(Output[i], PutBetweenRange(TempOutput[i], -5, 5));
+                        Output[i] = PutElementToFIFO(Output[i], TempOutput[i]);
                     //for (int i=0; i<NotOfTimesSend; i++)
-                    WriteToUSB(Output[0][0]);
+                    WriteToUSB(PutBetweenRange(Output[0][0], -5, 5));
                     publishProgress(PParams);
                 }
 
