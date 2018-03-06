@@ -9,6 +9,7 @@
     <string name="GRAPHS">Figures</string>
     <string-array name="SIM_VIEW_HEADS">
         <item>Diagram</item>
+        <item>Sampling time in milliseconds</item>
         <item>Parameters</item>
         <item>Signal generator</item>
         <item>Figure</item>

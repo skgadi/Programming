@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
 
     LinearLayout ModelView;
     EditText[] ModelParams;
+    EditText ModelSamplingTime;
     GraphView[] ModelGraphs;
     int[] ColorTable = {
             Color.RED,
@@ -447,7 +448,7 @@ public class MainActivity extends AppCompatActivity {
             TempSwitchForLayout.setChecked(false);
             DrawALine(ModelView);
         }
-        //Parameters
+        // Sampling Time
         DrawALine(ModelView);
         TempLayout = new LinearLayout(getApplicationContext());
         TempLayout.setOrientation(LinearLayout.VERTICAL);
@@ -459,15 +460,35 @@ public class MainActivity extends AppCompatActivity {
         TempSwitchForLayout.setTextSize(18);
         TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
         TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
-        //T_S
+
         TempTextView = new TextView(getApplicationContext());
         TempTextView.setTextColor(Color.BLACK);
-        TempTextView.setText(getString(R.string.SAMPLING_TIME)+" = "
-                +SettingsSeekBars[0].getProgress()
-                +" ms");
+        TempTextView.setText(getString(R.string.SAMPLING_TIME));
         TempTextView.setTypeface(null, Typeface.BOLD);
         TempLayout.addView(TempTextView);
-        //Others
+        ModelSamplingTime = new EditText(getApplicationContext());
+        ModelSamplingTime.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
+        ModelSamplingTime.setText(String.valueOf(SettingsSeekBars[0].getProgress()));
+        ModelSamplingTime.setTextColor(Color.BLACK);
+        TempLayout.addView(ModelSamplingTime);
+
+        ModelView.addView(TempSwitchForLayout);
+        ModelView.addView(TempLayout);
+        TempSwitchForLayout.setChecked(false);
+        DrawALine(ModelView);
+        //Parameters
+        DrawALine(ModelView);
+        TempLayout = new LinearLayout(getApplicationContext());
+        TempLayout.setOrientation(LinearLayout.VERTICAL);
+        TempSwitchForLayout = new Switch(getApplicationContext());
+        TempSwitchForLayout.setTextColor(Color.BLACK);
+        TempSwitchForLayout.setBackgroundColor(Color.LTGRAY);
+        TempSwitchForLayout.setChecked(true);
+        TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[2]);
+        TempSwitchForLayout.setTextSize(18);
+        TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
+        TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
+
         ModelParams = new EditText[Model.Parameters.length];
         for (int i=0; i<Model.Parameters.length; i++) {
             TempTextView = new TextView(getApplicationContext());
@@ -484,11 +505,12 @@ public class MainActivity extends AppCompatActivity {
                 TempTextView.setText(Model.Parameters[i].Name);
             TempLayout.addView(TempTextView);
             ModelParams[i] = new EditText(getApplicationContext());
-            ModelParams[i].setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
+            //ModelParams[i].setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
             ModelParams[i].setText(String.valueOf(Model.Parameters[i].DefaultValue));
             ModelParams[i].setTextColor(Color.BLACK);
             TempLayout.addView(ModelParams[i]);
         }
+
         ModelView.addView(TempSwitchForLayout);
         ModelView.addView(TempLayout);
         TempSwitchForLayout.setChecked(false);
@@ -503,7 +525,7 @@ public class MainActivity extends AppCompatActivity {
             TempSwitchForLayout.setTextColor(Color.BLACK);
             TempSwitchForLayout.setBackgroundColor(Color.LTGRAY);
             TempSwitchForLayout.setChecked(true);
-            TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[2]
+            TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[3]
                     + ": "
                     + Model.SignalGenerators[i]
                     + "=0"
@@ -535,18 +557,8 @@ public class MainActivity extends AppCompatActivity {
                 TempEditText.addTextChangedListener(new ListenerForFunctionGenerator(
                         GeneratedSignals[i], j, TempSwitchForLayout
                 ));
-                /*IndicatorSeekBar TempSeekBar = new IndicatorSeekBar.Builder(getApplicationContext())
-                        .setMin(GeneratedSignals[i].MinMaxDefaultsForFloats[j][0])
-                        .setMax(GeneratedSignals[i].MinMaxDefaultsForFloats[j][1])
-                        .setProgress(GeneratedSignals[i].MinMaxDefaultsForFloats[j][2])
-                        .isFloatProgress(true)
-                        .thumbProgressStay(true)
-                        .build();
-                TempSeekBar.setOnSeekChangeListener(
-                        new ListenerForFunctionGenerator(GeneratedSignals[i], j, TempSwitchForLayout));*/
                 TempLayout.addView(TempTextView);
                 TempLayout.addView(TempEditText);
-                //TempLayout.addView(TempSeekBar);
             }
             //Compliment
             Switch TempSwitchForCompliment = new Switch(getApplicationContext());
@@ -573,7 +585,7 @@ public class MainActivity extends AppCompatActivity {
             TempSwitchForLayout.setTextColor(Color.BLACK);
             TempSwitchForLayout.setBackgroundColor(Color.LTGRAY);
             TempSwitchForLayout.setChecked(true);
-            TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[3]
+            TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[4]
                     + " " +((int)i+1) + ": "
                     + Model.Figures[i].Name);
             TempSwitchForLayout.setTextSize(18);
@@ -639,10 +651,10 @@ public class MainActivity extends AppCompatActivity {
                     E[i] = ((Generated[0][i] + Generated[1][i] + Generated[2][i]) - Input[0][i]);
                 }
                 double [] OutSignals = new double[1];
-                OutSignals[0] = Output[0][1]
-                        + a * E[0]
-                        + b * E[1]
-                        + c * E[2];
+                OutSignals[0] = PutBetweenRange(
+                        Output[0][1] + a * E[0] + b * E[1] + c * E[2],
+                        -5,
+                        5);
                 //OutSignals[0] = 0.01f*K_P*E[0];////Generated[2][0];//K_P*E[0];//
                 return OutSignals;
             }
@@ -1179,62 +1191,11 @@ public class MainActivity extends AppCompatActivity {
                     WriteToUSB(PutBetweenRange(Output[0][0], -5, 5));
                     publishProgress(PParams);
                 }
-
-
-                /*int LoopCycle = 0;
-                boolean ReadAValidInThisCycle = false;
-                while ((((int)(System.currentTimeMillis() - StartTime))
-                                %(Math.round(Model.T_S*1000))) != 0) {
-                    if (isValidRead && WaitedTS) {
-                        isValidRead  = false;
-                        WaitedTS = false;
-                        ReadAValidInThisCycle = true;
-                        //TS3Delay = TS2Delay;
-                        //TS2Delay = TS1Delay;
-                        TS1Delay = TSPresent;
-                        TSPresent = (System.currentTimeMillis()-StartTime)/1000.0f - Time;
-                        float MovingAverageTS = ((0 * TS3Delay) + (0 * TS2Delay) + TS1Delay + TSPresent) / 4f;
-                        if ((MovingAverageTS > 1.2*Model.T_S) && (NotOfTimesSend<10))
-                            NotOfTimesSend++;
-                        if ((MovingAverageTS < 0.8*Model.T_S) && (NotOfTimesSend>1))
-                            NotOfTimesSend--;
-                        Log.i("Timing", "Moving TS Average: " + MovingAverageTS );
-                        Log.i("Timing", "Number of times send write: " + NotOfTimesSend);
-
-                        Time = (System.currentTimeMillis()-StartTime)/1000.0f;
-                        for (int i=0; i<Input.length; i++)
-                            Input[i] = PutElementToFIFO(Input[i], RecData[i]);
-                        for (int i = 0; i< PreparedSignals.length; i++)
-                            PreparedSignals[i] = PutElementToFIFO(PreparedSignals[i],
-                                    GeneratedSignals[i].GetValue(Time));
-                        float[] TempOutput = Model.RunAlgorithms(
-                                GetParameters(),
-                                PreparedSignals,
-                                Input,
-                                Output
-                        );
-                        for (int i=0; i<TempOutput.length; i++)
-                            Output[i] = PutElementToFIFO(Output[i], PutBetweenRange(TempOutput[i], -5, 5));
-                        publishProgress(PParams);
-                    }
-                    if (LoopCycle==0) {
-                        try {
-                            for (int i=0; i<NotOfTimesSend; i++)
-                                WriteToUSB(Output[0][0]);
-                            MissedTicks = 0;
-                            Log.i("Timing", "Write success");
-                        } catch (Exception e) {
-                            MissedTicks++;
-                            Log.i("Timing", "Writing error");
-                            e.printStackTrace();
-                        }
-                    }
-                    LoopCycle++;
+                try {
+                    Model.T_S = Double.parseDouble(ModelSamplingTime.getText().toString())/1000.0;
+                } catch (Exception e) {
+                    Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0;
                 }
-                if (MissedTicks>=5)
-                    this.cancel(true);
-                WaitedTS = true;
-                NoOfIterations++;*/
             }
             return null;
         }
@@ -1264,7 +1225,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute () {
             Purged = false;
-            Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0;
+            try {
+                Model.T_S = Double.parseDouble(ModelSamplingTime.getText().toString())/1000.0;
+            } catch (Exception e) {
+                Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0;
+            }
             Input = new double[Model.NoOfInputs][Model.NoOfPastInputsRequired+1];
             Output = new double[Model.NoOfOutputs][Model.NoOfPastOuputsRequired+1];
             PreparedSignals = new double[Model.SignalGenerators.length][Model.NoOfPastGeneratedValuesRequired+1];
