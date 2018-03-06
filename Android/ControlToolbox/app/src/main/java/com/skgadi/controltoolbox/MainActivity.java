@@ -729,7 +729,7 @@ public class MainActivity extends AppCompatActivity {
                 double [] OutSignals = new double[3];
                 OutSignals[1] = Output[1][0] + Gamma*Model.T_S*(E[0]*R[0] + E[1]*R[1])/2.0;
                 OutSignals[2] = Output[2][0] + Gamma*Model.T_S*(E[0]*Input[0][0] + E[1]*Input[0][1])/2.0;
-                OutSignals[0] = OutSignals[1]*R[0] + OutSignals[2]*Input[0][0];
+                OutSignals[0] = PutBetweenRange(OutSignals[1]*R[0] + OutSignals[2]*Input[0][0], -5, 5);
                 return OutSignals;
             }
 
