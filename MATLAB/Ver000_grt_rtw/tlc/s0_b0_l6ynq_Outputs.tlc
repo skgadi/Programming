@@ -1,0 +1,37 @@
+%implements s0_b0_l6ynq_Outputs "C"
+
+%function Outputs(block, system) Output
+%<SLibCGIRAccessLocalVar(0, 0)> %% rtb_Saturation
+%assign cfgTxt = ""
+%openfile cfgTxt
+%assign localVarDecl = ""
+%assign tlcOutputsFcnOfS0B1 = OpaqueTLCBlockFcn("Outputs", 0, 1, 0, 2)
+/* Saturate: '<Root>/Saturation' incorporates:
+ *  Constant: '<Root>/Constant'
+ */
+if (Ver000_P.Constant_Value > Ver000_P.Saturation_UpperSat) {
+    rtb_Saturation = Ver000_P.Saturation_UpperSat;
+} else if (Ver000_P.Constant_Value < Ver000_P.Saturation_LowerSat) {
+    rtb_Saturation = Ver000_P.Saturation_LowerSat;
+} else {
+    rtb_Saturation = Ver000_P.Constant_Value;
+}
+/* End of Saturate: '<Root>/Saturation' */
+%if !WHITE_SPACE(tlcOutputsFcnOfS0B1)
+
+/* S-Function (sldrtao): '<Root>/Analog Output1' */
+%<tlcOutputsFcnOfS0B1>\
+%endif
+%<SLibInsertSolverResetCode()>\
+%closefile cfgTxt
+%<cfgTxt>
+%<LibSetSystemField(system, "CachedOutputLocalVars", localVarDecl)>
+%endfunction
+%function OutputsFcnProtoType(block, system) Output
+%assign fcnProtoType = ""
+%openfile fcnProtoType
+static void Outputs(\
+%assign comma = ""
+%closefile fcnProtoType
+%<SLibCG_SetFcnProtoType(0, 2, fcnProtoType)>
+%endfunction
