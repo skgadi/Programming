@@ -41,6 +41,7 @@ import me.aflak.arduino.ArduinoListener;
 enum SCREENS {
     MAIN_SCREEN,
     SETTINGS,
+    OPENLOOP,
     PID,
     IDENTIFICATION0,
     IDENTIFICATION1,
@@ -92,6 +93,8 @@ public class MainActivity extends AppCompatActivity {
     };
     String[] SettingsDBColumns = {"SamplingTime", "ChartHistoryLength", "ZoomXWindow", "ChartWindowHeight"};
     IndicatorSeekBar[] SettingsSeekBars;
+    double[] AnalogOutLimits = {0, 5};
+    double[] AnalogInLimits = {0, 5};
 
 
     //----- Communication and other from prev program
@@ -158,10 +161,12 @@ public class MainActivity extends AppCompatActivity {
         Screens = new LinearLayout[SCREENS.values().length];
         Screens[0] = (LinearLayout) findViewById(R.id.Main);
         Screens[1] = (LinearLayout) findViewById(R.id.Settings);
-        Screens[2] = (LinearLayout) findViewById(R.id.ModelView);
-        Screens[3] = (LinearLayout) findViewById(R.id.ModelView);
+        for (int i=2; i< Screens.length; i++)
+            Screens[i] = (LinearLayout) findViewById(R.id.ModelView);
+        /*Screens[3] = (LinearLayout) findViewById(R.id.ModelView);
         Screens[4] = (LinearLayout) findViewById(R.id.ModelView);
         Screens[5] = (LinearLayout) findViewById(R.id.ModelView);
+        Screens[6] = (LinearLayout) findViewById(R.id.ModelView);*/
         DefaultLayoutParams =  new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.FILL_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -386,6 +391,10 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case SETTINGS:
                 break;
+            case OPENLOOP:
+                PrepareOpenLoopModel();
+                GenerateViewFromModel();
+                break;
             case PID:
                 PreparePIDModel();
                 GenerateViewFromModel();
@@ -551,7 +560,7 @@ public class MainActivity extends AppCompatActivity {
                 TempTextView.setTextColor(Color.BLACK);
                 TempTextView.setText(getResources().getStringArray(R.array.SIGNAL_GENERATOR_PARAMETERS)[j]);
                 EditText TempEditText = new EditText(getApplicationContext());
-                TempEditText.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
+                //TempEditText.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
                 TempEditText.setText(String.valueOf(GeneratedSignals[i].MinMaxDefaultsForFloats[j][2]));
                 TempEditText.setTextColor(Color.BLACK);
                 TempEditText.addTextChangedListener(new ListenerForFunctionGenerator(
@@ -631,6 +640,62 @@ public class MainActivity extends AppCompatActivity {
         DrawALine(ModelView);
     }
 
+
+    private void PrepareOpenLoopModel() {
+        Model = new SimulationView() {
+            @Override
+            public double[] RunAlgorithms(
+                    double[] Parameters,
+                    double[][] Generated,
+                    double[][] Input,
+                    double[][] Output
+            ){
+                double [] OutSignals = new double[1];
+                OutSignals[0] = Generated[0][0] + Generated[1][0] + Generated[2][0];
+                return OutSignals;
+            }
+
+            @Override
+            public double[] OutGraphSignals(
+                    double[] Parameters,
+                    double[][] Generated,
+                    double[][] Input,
+                    double[][] Output
+            )
+            {
+                double[] Trajectories = new double[2];
+                Trajectories[0] = Generated[0][0] + Generated[1][0] + Generated[2][0];
+                Trajectories[1] = Input[0][0];
+                return Trajectories;
+            }
+        };
+        Model.NoOfInputs=1;
+        Model.NoOfOutputs=1;
+        Model.NoOfPastInputsRequired = 0;
+        Model.NoOfPastOuputsRequired = 0;
+        Model.NoOfPastGeneratedValuesRequired = 0;
+        Model.OutPut = new double[0];
+        //Model.OutPut[0]=0;
+        Model.Images = new int[1];
+        Model.Images[0] = R.drawable.pid;
+        //Model.Images[1] = R.drawable.pid;
+        Model.ImageNames = new String[1];
+        Model.ImageNames[0] = "Closed loop system";
+        //Model.ImageNames[1] = "Reference Value details";
+        Model.SignalGenerators = new String[3];
+        Model.SignalGenerators[0] = "I1(t)";
+        Model.SignalGenerators[1] = "I2(t)";
+        Model.SignalGenerators[2] = "I3(t)";
+        Model.Figures = new Figure[1];
+        String[] TempTrajectories = new String[2];
+        TempTrajectories[0]= "Input i(t)";
+        TempTrajectories[1]= "Output y(t)";
+        Model.Figures[0] = new Figure("Reference r(t) and Output y(t)", TempTrajectories);
+        Model.Parameters = new Parameter [0];
+        Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0;
+    }
+
+
     private void PreparePIDModel() {
         Model = new SimulationView() {
             @Override
@@ -653,8 +718,8 @@ public class MainActivity extends AppCompatActivity {
                 double [] OutSignals = new double[1];
                 OutSignals[0] = PutBetweenRange(
                         Output[0][1] + a * E[0] + b * E[1] + c * E[2],
-                        -5,
-                        5);
+                        AnalogOutLimits[0],
+                        AnalogOutLimits[1]);
                 //OutSignals[0] = 0.01f*K_P*E[0];////Generated[2][0];//K_P*E[0];//
                 return OutSignals;
             }
@@ -741,7 +806,7 @@ public class MainActivity extends AppCompatActivity {
                 double [] OutSignals = new double[3];
                 OutSignals[1] = Output[1][0] + Gamma*Model.T_S*(E[0]*R[0] + E[1]*R[1])/2.0;
                 OutSignals[2] = Output[2][0] + Gamma*Model.T_S*(E[0]*Input[0][0] + E[1]*Input[0][1])/2.0;
-                OutSignals[0] = PutBetweenRange(OutSignals[1]*R[0] + OutSignals[2]*Input[0][0], -5, 5);
+                OutSignals[0] = PutBetweenRange(OutSignals[1]*R[0] + OutSignals[2]*Input[0][0], AnalogOutLimits[0], AnalogOutLimits[1]);
                 return OutSignals;
             }
 
@@ -800,7 +865,7 @@ public class MainActivity extends AppCompatActivity {
         Model.Figures[2] = new Figure("Parameters of the system", TempTrajectories);
 
         Model.Parameters = new Parameter [1];
-        Model.Parameters[0] = new Parameter("Adaptive Control Parameters>>\u03B3", 0, 1000, 0.005);
+        Model.Parameters[0] = new Parameter("Adaptive Control Parameters>>\u03B3", 0, 1000, 1);
         Model.T_S = ReadSettingsPositions()[Arrays.asList(SettingsDBColumns).indexOf("SamplingTime")]/1000.0;
     }
 
@@ -1003,7 +1068,7 @@ public class MainActivity extends AppCompatActivity {
     private void DataRecUpdateForHex (byte[] data) {
         if (data.length>=2) {
             short TempVal = (short) ((data[0] & 0xff) | (data[1] << 8));
-            RecData[0] = PutBetweenRange(TempVal/1024.0*5.0, -5, 5);
+            RecData[0] = PutBetweenRange(TempVal/1024.0*5.0, AnalogInLimits[0], AnalogInLimits[1]);
             Log.i("Timing", "New Data: " + TempVal);
             isValidRead = true;
         } /*else if (data.length==1) {
@@ -1188,7 +1253,7 @@ public class MainActivity extends AppCompatActivity {
                     for (int i=0; i<TempOutput.length; i++)
                         Output[i] = PutElementToFIFO(Output[i], TempOutput[i]);
                     //for (int i=0; i<NotOfTimesSend; i++)
-                    WriteToUSB(PutBetweenRange(Output[0][0], -5, 5));
+                    WriteToUSB(PutBetweenRange(Output[0][0], AnalogOutLimits[0], AnalogOutLimits[1]));
                     publishProgress(PParams);
                 }
                 try {

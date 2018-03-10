@@ -33,6 +33,7 @@
     <string-array name="SCREENS_LIST">
         <item>Main window</item>
         <item>Settings</item>
+        <item>Open loop system</item>
         <item>PID Controller</item>
         <item>Adaptive Controller</item>
         <item>First order identification</item>
