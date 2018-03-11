@@ -32,4 +32,5 @@ dependencies {
     compile 'com.jjoe64:graphview:4.2.1'
     compile 'me.aflak.libraries:arduino:1.4.1'
     compile 'com.github.warkiz.widget:indicatorseekbar:1.2.9'
+    compile group: 'org.ejml', name: 'ejml-all', version: '0.33'
 }
