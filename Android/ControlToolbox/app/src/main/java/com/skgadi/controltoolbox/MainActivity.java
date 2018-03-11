@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.hardware.usb.UsbDevice;
 import android.os.AsyncTask;
@@ -11,12 +12,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -60,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout.LayoutParams DefaultLayoutParams;
     private LinearLayout[] Screens;
     SCREENS PresentScreen = SCREENS.MAIN_SCREEN;
+    SCREENS LastModelScreen;
 
     SCREENS PreviousScreen;
     private boolean CloseApp;
@@ -385,28 +390,30 @@ public class MainActivity extends AppCompatActivity {
             setTitle(getResources().getString(R.string.app_name)
                     + ": "
                     + getResources().getStringArray(R.array.SCREENS_LIST)[PresentScreen.ordinal()]);
-        ClearTheModelView ();
-        switch (Screen) {
-            case MAIN_SCREEN:
-                break;
-            case SETTINGS:
-                break;
-            case OPENLOOP:
-                PrepareOpenLoopModel();
-                GenerateViewFromModel();
-                break;
-            case PID:
-                PreparePIDModel();
-                GenerateViewFromModel();
-                break;
-            case IDENTIFICATION0:
-                PrepareAdaptiveControlModel();
-                GenerateViewFromModel();
-                break;
-            case IDENTIFICATION1:
-                break;
-            case IDENTIFICATION2:
-                break;
+        if (LastModelScreen != Screen && Screen.ordinal()>1) {
+            LastModelScreen = Screen;
+            switch (Screen) {
+                case MAIN_SCREEN:
+                    break;
+                case SETTINGS:
+                    break;
+                case OPENLOOP:
+                    PrepareOpenLoopModel();
+                    GenerateViewFromModel();
+                    break;
+                case PID:
+                    PreparePIDModel();
+                    GenerateViewFromModel();
+                    break;
+                case IDENTIFICATION0:
+                    PrepareAdaptiveControlModel();
+                    GenerateViewFromModel();
+                    break;
+                case IDENTIFICATION1:
+                    break;
+                case IDENTIFICATION2:
+                    break;
+            }
         }
     }
 
@@ -423,8 +430,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void GenerateViewFromModel () {
-        /*//Removing previous view
-        ClearTheModelView ();*/
+        //Removing previous view
+        ClearTheModelView ();
         //ModelView.getBackgroundTintList()
         ModelView.setBackgroundColor(Color.WHITE);
         //Declaring TempVariables
@@ -470,6 +477,7 @@ public class MainActivity extends AppCompatActivity {
         TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
         TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
 
+        TempLayout.setOrientation(LinearLayout.HORIZONTAL);
         TempTextView = new TextView(getApplicationContext());
         TempTextView.setTextColor(Color.BLACK);
         TempTextView.setText(getString(R.string.SAMPLING_TIME));
@@ -479,6 +487,8 @@ public class MainActivity extends AppCompatActivity {
         ModelSamplingTime.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
         ModelSamplingTime.setText(String.valueOf(SettingsSeekBars[0].getProgress()));
         ModelSamplingTime.setTextColor(Color.BLACK);
+        TempTextView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        ModelSamplingTime.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         TempLayout.addView(ModelSamplingTime);
 
         ModelView.addView(TempSwitchForLayout);
@@ -486,44 +496,56 @@ public class MainActivity extends AppCompatActivity {
         TempSwitchForLayout.setChecked(false);
         DrawALine(ModelView);
         //Parameters
-        DrawALine(ModelView);
-        TempLayout = new LinearLayout(getApplicationContext());
-        TempLayout.setOrientation(LinearLayout.VERTICAL);
-        TempSwitchForLayout = new Switch(getApplicationContext());
-        TempSwitchForLayout.setTextColor(Color.BLACK);
-        TempSwitchForLayout.setBackgroundColor(Color.LTGRAY);
-        TempSwitchForLayout.setChecked(true);
-        TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[2]);
-        TempSwitchForLayout.setTextSize(18);
-        TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
-        TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
+        if (Model.Parameters.length>0) {
+            DrawALine(ModelView);
+            TempLayout = new LinearLayout(getApplicationContext());
+            TempLayout.setOrientation(LinearLayout.VERTICAL);
+            TempSwitchForLayout = new Switch(getApplicationContext());
+            TempSwitchForLayout.setTextColor(Color.BLACK);
+            TempSwitchForLayout.setBackgroundColor(Color.LTGRAY);
+            TempSwitchForLayout.setChecked(true);
+            TempSwitchForLayout.setText(getResources().getStringArray(R.array.SIM_VIEW_HEADS)[2]);
+            TempSwitchForLayout.setTextSize(18);
+            TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
+            TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
 
-        ModelParams = new EditText[Model.Parameters.length];
-        for (int i=0; i<Model.Parameters.length; i++) {
-            TempTextView = new TextView(getApplicationContext());
-            TempTextView.setTextColor(Color.BLACK);
-            if (Model.Parameters[i].Name.contains(">>")) {
-                String[] TempTitles = Model.Parameters[i].Name.split(">>");
-                TempTextView.setText(TempTitles[0]);
-                TempTextView.setTypeface(null, Typeface.BOLD);
-                TempLayout.addView(TempTextView);
+            ModelParams = new EditText[Model.Parameters.length];
+            for (int i = 0; i < Model.Parameters.length; i++) {
+                LinearLayout TempHorizontalLayout = new LinearLayout(getApplicationContext());
+                TempHorizontalLayout.setOrientation(LinearLayout.HORIZONTAL);
+                TempHorizontalLayout.setLayoutParams(new
+                        LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.MATCH_PARENT));
+
                 TempTextView = new TextView(getApplicationContext());
                 TempTextView.setTextColor(Color.BLACK);
-                TempTextView.setText(TempTitles[1]);
-            } else
-                TempTextView.setText(Model.Parameters[i].Name);
-            TempLayout.addView(TempTextView);
-            ModelParams[i] = new EditText(getApplicationContext());
-            //ModelParams[i].setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
-            ModelParams[i].setText(String.valueOf(Model.Parameters[i].DefaultValue));
-            ModelParams[i].setTextColor(Color.BLACK);
-            TempLayout.addView(ModelParams[i]);
-        }
+                if (Model.Parameters[i].Name.contains(">>")) {
+                    String[] TempTitles = Model.Parameters[i].Name.split(">>");
+                    TempTextView.setText(TempTitles[0]);
+                    TempTextView.setTypeface(null, Typeface.BOLD);
+                    TempLayout.addView(TempTextView);
+                    TempTextView = new TextView(getApplicationContext());
+                    TempTextView.setTextColor(Color.BLACK);
+                    TempTextView.setText(TempTitles[1] + ": ");
+                } else
+                    TempTextView.setText(Model.Parameters[i].Name + ": ");
+                ModelParams[i] = new EditText(getApplicationContext());
+                //ModelParams[i].setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
+                ModelParams[i].setText(String.valueOf(Model.Parameters[i].DefaultValue));
+                ModelParams[i].setTextColor(Color.BLACK);
+                TempTextView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                ModelParams[i].setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                TempHorizontalLayout.addView(TempTextView);
+                TempHorizontalLayout.addView(ModelParams[i]);
+                TempLayout.addView(TempHorizontalLayout);
+            }
 
-        ModelView.addView(TempSwitchForLayout);
-        ModelView.addView(TempLayout);
-        TempSwitchForLayout.setChecked(false);
-        DrawALine(ModelView);
+            ModelView.addView(TempSwitchForLayout);
+            ModelView.addView(TempLayout);
+            TempSwitchForLayout.setChecked(false);
+            DrawALine(ModelView);
+        }
         //Function generator
         DrawALine(ModelView);
         GeneratedSignals = new FunctionGenerator[Model.SignalGenerators.length];
@@ -542,23 +564,30 @@ public class MainActivity extends AppCompatActivity {
             TempSwitchForLayout.setTextSize(18);
             TempSwitchForLayout.setTypeface(null, Typeface.BOLD);
             TempSwitchForLayout.setOnCheckedChangeListener(new LayoutSwitch(TempLayout));
-
             //SignalType
             Spinner TempFunctionsView = new Spinner(getApplicationContext());
+            TempFunctionsView.setLayoutParams(new Spinner.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             final List<String> SignalsList =
                     new ArrayList<>(Arrays.asList(getResources().getStringArray(R.array.AVAILABLE_SIGNALS)));
             final ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(
                     this,R.layout.spinner_item,SignalsList);
             TempFunctionsView.setAdapter(spinnerArrayAdapter);
+            //TempFunctionsView.getBackground().setColorFilter(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
             TempLayout.addView(TempFunctionsView);
             GeneratedSignals[i] = new FunctionGenerator();
             TempFunctionsView.setOnItemSelectedListener(
                     new SignalTypeListener(GeneratedSignals[i], TempSwitchForLayout));
             //Floats
+            LinearLayout TempHorizontalLayout = new LinearLayout(getApplicationContext());
+            TempHorizontalLayout.setOrientation(LinearLayout.HORIZONTAL);
+            TempHorizontalLayout.setLayoutParams(new
+                    LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT));
             for (int j=0; j<5; j++) {
                 TempTextView = new TextView(getApplicationContext());
                 TempTextView.setTextColor(Color.BLACK);
-                TempTextView.setText(getResources().getStringArray(R.array.SIGNAL_GENERATOR_PARAMETERS)[j]);
+                TempTextView.setText(getResources().getStringArray(R.array.SIGNAL_GENERATOR_PARAMETERS)[j]+": ");
                 EditText TempEditText = new EditText(getApplicationContext());
                 //TempEditText.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL|InputType.TYPE_CLASS_NUMBER);
                 TempEditText.setText(String.valueOf(GeneratedSignals[i].MinMaxDefaultsForFloats[j][2]));
@@ -566,9 +595,13 @@ public class MainActivity extends AppCompatActivity {
                 TempEditText.addTextChangedListener(new ListenerForFunctionGenerator(
                         GeneratedSignals[i], j, TempSwitchForLayout
                 ));
-                TempLayout.addView(TempTextView);
-                TempLayout.addView(TempEditText);
+                TempTextView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                TempEditText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                TempHorizontalLayout.addView(TempTextView);
+                TempHorizontalLayout.addView(TempEditText);
+                TempHorizontalLayout.setGravity(Gravity.CENTER);
             }
+            TempLayout.addView(TempHorizontalLayout);
             //Compliment
             Switch TempSwitchForCompliment = new Switch(getApplicationContext());
             TempSwitchForCompliment.setChecked(false);
