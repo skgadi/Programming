@@ -1062,7 +1062,7 @@ public class MainActivity extends AppCompatActivity {
         Model.Figures[0] = new Figure("Input output graph", TempTrajectories);
         TempTrajectories = new String[2];
         TempTrajectories[0]= "Theta_1 Cap";
-        TempTrajectories[1]= "Theta_1 Cap";
+        TempTrajectories[1]= "Theta_2 Cap";
         Model.Figures[1] = new Figure("Identified parameters (Theta)", TempTrajectories);
         TempTrajectories = new String[2];
         TempTrajectories[0]= "A Cap";
