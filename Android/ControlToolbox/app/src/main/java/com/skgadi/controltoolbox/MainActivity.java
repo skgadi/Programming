@@ -37,6 +37,7 @@ import org.ejml.dense.row.CommonOps_DDRM;
 import org.ejml.equation.Equation;
 import org.ejml.simple.SimpleMatrix;
 
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -689,7 +690,7 @@ public class MainActivity extends AppCompatActivity {
                     double[][] Input,
                     double[][] Output
             ){
-                double [] OutSignals = new double[1];
+                double [] OutSignals = new double[NoOfOutputs];
                 OutSignals[0] = Generated[0][0] + Generated[1][0] + Generated[2][0];
                 return OutSignals;
             }
@@ -754,7 +755,7 @@ public class MainActivity extends AppCompatActivity {
                 for (int i=0; i<3; i++) {
                     E[i] = ((Generated[0][i] + Generated[1][i] + Generated[2][i]) - Input[0][i]);
                 }
-                double [] OutSignals = new double[1];
+                double [] OutSignals = new double[NoOfOutputs];
                 OutSignals[0] = PutBetweenRange(
                         Output[0][0] + a * E[0] + b * E[1] + c * E[2],
                         AnalogOutLimits[0],
@@ -842,7 +843,7 @@ public class MainActivity extends AppCompatActivity {
                     R[i] = Generated[0][i] + Generated[1][i] + Generated[2][i];
                 for (int i=0; i<3; i++)
                     E[i] = (R[i] - Input[0][i]);
-                double [] OutSignals = new double[3];
+                double [] OutSignals = new double[NoOfOutputs];
                 OutSignals[1] = Output[1][0] + Gamma*Model.T_S*(E[0]*R[0] + E[1]*R[1])/2.0;
                 OutSignals[2] = Output[2][0] + Gamma*Model.T_S*(E[0]*Input[0][0] + E[1]*Input[0][1])/2.0;
                 OutSignals[0] = PutBetweenRange(OutSignals[1]*R[0] + OutSignals[2]*Input[0][0], AnalogOutLimits[0], AnalogOutLimits[1]);
@@ -923,8 +924,10 @@ public class MainActivity extends AppCompatActivity {
                     Output[2] --> P12
                     Output[3] --> P21
                     Output[4] --> P22
-                    Output[5] --> a cap
-                    Output[6] --> b cap
+                    Output[5] --> a Cap
+                    Output[6] --> b Cap
+                    Output[7] --> K
+                    Output[8] --> Z Cap Calculated
                     Generated[0] --> R_1
                     Generated[1] --> R_2
                     Generated[2] --> R_3
@@ -932,6 +935,8 @@ public class MainActivity extends AppCompatActivity {
                     Input[0] --> z
                     E --> e
                 */
+                double Lambda = 0.993;
+                double K = Output[7][0];
 
                 DMatrixRMaj z = new DMatrixRMaj(1,1);
                 z.set(0, 0, Input[0][0]);
@@ -942,11 +947,11 @@ public class MainActivity extends AppCompatActivity {
                 Theta_1.set(0,0, Output[5][0]);
                 Theta_1.set(1,0, Output[6][0]);
                 DMatrixRMaj P_1 = new DMatrixRMaj(2,2);
-                if ((Output[1][0] ==0 ) && (Output[2][0] ==0 ) && (Output[3][0] ==0 ) && (Output[4][0] ==0 )) {
-                    P_1.set(0, 0, 0.5);
+                if (K==0) {
+                    P_1.set(0, 0, 1000);
                     P_1.set(0, 1, 0);
                     P_1.set(1, 0, 0);
-                    P_1.set(1, 1, 0.5);
+                    P_1.set(1, 1, 1000);
                 } else {
                     P_1.set(0, 0, Output[1][0]);
                     P_1.set(0, 1, Output[2][0]);
@@ -962,8 +967,7 @@ public class MainActivity extends AppCompatActivity {
                 // Calculation of e
                 CommonOps_DDRM.transpose(Phi, PhiTranspose);
                 CommonOps_DDRM.mult(PhiTranspose, Theta_1, e);
-                CommonOps_DDRM.changeSign(e);
-                CommonOps_DDRM.addEquals(e,z);
+                CommonOps_DDRM.changeSign(e);CommonOps_DDRM.addEquals(e,z);
                 // Calculation of P
                 TempMatrix0 = new DMatrixRMaj(2,1);
                 TempMatrix1 = new DMatrixRMaj(1,1);
@@ -971,13 +975,16 @@ public class MainActivity extends AppCompatActivity {
                 TempMatrix3 = new DMatrixRMaj(2,1);
                 CommonOps_DDRM.mult(P_1,Phi,TempMatrix0);
                 CommonOps_DDRM.mult(PhiTranspose, TempMatrix0, TempMatrix1);
-                CommonOps_DDRM.add(TempMatrix1, 1);
+                CommonOps_DDRM.add(TempMatrix1, Lambda);
                 CommonOps_DDRM.invert(TempMatrix1);
+
                 CommonOps_DDRM.mult(PhiTranspose, P_1, TempMatrix2);
                 CommonOps_DDRM.mult(P_1, Phi, TempMatrix3);
                 CommonOps_DDRM.mult(TempMatrix3, TempMatrix2, P);
                 CommonOps_DDRM.changeSign(P);
+                CommonOps_DDRM.scale(TempMatrix1.get(0,0), P);
                 CommonOps_DDRM.addEquals(P, P_1);
+                CommonOps_DDRM.scale(1/Lambda, P);
                 // Calculations of Theta
                 CommonOps_DDRM.mult(P, Phi, Theta);
                 CommonOps_DDRM.mult(Theta, e, Theta);
@@ -1002,7 +1009,7 @@ public class MainActivity extends AppCompatActivity {
                 eq.process("Theta = Theta_1 + Theta");*/
 
 
-                double [] OutSignals = new double[7];
+                double [] OutSignals = new double[NoOfOutputs];
                 OutSignals[0] = Generated[0][0] + Generated[1][0] + Generated[2][0];
                 OutSignals[1] = P.get(0,0);
                 OutSignals[2] = P.get(0,1);
@@ -1010,6 +1017,8 @@ public class MainActivity extends AppCompatActivity {
                 OutSignals[4] = P.get(1,1);
                 OutSignals[5] = Theta.get(0,0);
                 OutSignals[6] = Theta.get(1,0);
+                OutSignals[7] = K+1;
+                OutSignals[8] =  Output[8][1]*Theta.get(0,0) + Theta.get(1,0)*Output[0][1];
                 Log.i("Algorithm", "Phi: " + Phi.toString());
                 Log.i("Algorithm", "Theta: "  + Theta.toString());
                 Log.i("Algorithm", "z: "  + z);
@@ -1026,18 +1035,19 @@ public class MainActivity extends AppCompatActivity {
                     double[][] Output
             )
             {
-                double[] Trajectories = new double[6];
+                double[] Trajectories = new double[7];
                 Trajectories[0] = Generated[0][0] + Generated[1][0] + Generated[2][0];
                 Trajectories[1] = Input[0][0];
-                Trajectories[2] = Output[5][0];
-                Trajectories[3] = Output[6][0];
-                Trajectories[4] = -Math.log(Output[5][0])/Model.T_S;
-                Trajectories[5] = Output[6][0]*Trajectories[4]/(1-Output[5][0]);
+                Trajectories[2] = Output[8][0];
+                Trajectories[3] = Output[5][0];
+                Trajectories[4] = Output[6][0];
+                Trajectories[5] = -Math.log(Output[5][0])/Model.T_S;
+                Trajectories[6] = Output[6][0]*Trajectories[4]/(1-Output[5][0]);
                 return Trajectories;
             }
         };
         Model.NoOfInputs=1;
-        Model.NoOfOutputs=7;
+        Model.NoOfOutputs=9;
         Model.NoOfPastInputsRequired = 2;
         Model.NoOfPastOuputsRequired = 1;
         Model.NoOfPastGeneratedValuesRequired = 2;
@@ -1056,9 +1066,10 @@ public class MainActivity extends AppCompatActivity {
 
         //Figures
         Model.Figures = new Figure[3];
-        String[] TempTrajectories = new String[2];
-        TempTrajectories[0]= "A Cap";
-        TempTrajectories[1]= "B Cap";
+        String[] TempTrajectories = new String[3];
+        TempTrajectories[0]= "Input to the system u(t)";
+        TempTrajectories[1]= "Output of the system y(t)";
+        TempTrajectories[2]= "Validation Output of the system ycap(t)";
         Model.Figures[0] = new Figure("Input output graph", TempTrajectories);
         TempTrajectories = new String[2];
         TempTrajectories[0]= "Theta_1 Cap";
@@ -1414,6 +1425,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!Purged)
                     PurgeReceivedBuffer();
                 Time = (System.currentTimeMillis()-StartTime)/1000.0;
+                Model.SimulationTime = Time;
                 if ((
                         (((int)(System.currentTimeMillis() - StartTime))%Math.round(Model.T_S*1000)) == 0)
                         &&

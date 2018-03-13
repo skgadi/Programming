@@ -22,6 +22,7 @@ public abstract class SimulationView {
     public int NoOfPastInputsRequired;
     public int NoOfPastOuputsRequired;
     public int NoOfPastGeneratedValuesRequired;
+    public double SimulationTime;
     public abstract double[] RunAlgorithms(
             double[] Parameters,
             double[][] Generated,
